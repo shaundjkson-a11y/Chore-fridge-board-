@@ -1,0 +1,40 @@
+/* Portrait reference canvas, uniformly fitted to the Family Hub viewport. */
+html,body{background:#02070b;overflow:hidden}
+body{padding:0}
+.app{position:absolute;width:536px;height:848px;display:block;transform-origin:0 0;background:url('assets/family-hub-artwork.png') center/100% 100% no-repeat}
+.top{position:absolute;left:16px;top:10px;width:504px;height:128px;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible}
+.topShade{display:none}.topInner{padding:16px 8px;display:block}
+.brand{gap:10px}.logo{width:38px;height:30px;margin-top:0}.logo:before,.logo:after{width:10px;height:28px}.logo:after{left:21px}
+.title{font-size:25px;letter-spacing:-.6px;line-height:1.05}.tag{font-size:6px;letter-spacing:2.3px;margin-top:6px}
+.topRight{position:absolute;top:14px;right:6px;gap:9px}.date{font-size:10px}.date b{font-size:16px;line-height:1.1}.gear{width:37px;height:37px;border-radius:10px;font-size:22px;background:rgba(3,16,35,.65);box-shadow:0 0 9px #55599980}
+.scribble{font-family:'Segoe Print','Comic Sans MS',cursive;font-size:11px;line-height:1.15;margin-top:10px;transform:rotate(-12deg);font-weight:400}
+.cards{position:absolute;left:17px;top:140px;width:502px;height:410px;gap:8px}
+.card,.card.indie,.card.lola,.card.gideon{border:0;box-shadow:none;background:none;border-radius:13px;grid-template-rows:108px 255px 47px}
+.hero,.indie .hero,.lola .hero,.gideon .hero{background:none;overflow:visible}.hero:after{display:none}.heroInner{padding:23px 10px 0}
+.roleIcon,.roleIcon svg{width:36px;height:36px}.roleIcon{margin-bottom:3px}.roleIcon svg{stroke-width:2.8;filter:drop-shadow(0 0 4px currentColor)}
+.name{font-size:22px;letter-spacing:-.6px;line-height:1.08}.role{font-size:9px;font-weight:700;margin-top:5px}
+.ring,.indie .ring,.lola .ring,.gideon .ring{right:9px;bottom:4px;width:56px;height:56px;background:rgba(0,7,18,.8);border:6px solid;box-shadow:0 0 12px currentColor;display:flex;align-items:center;justify-content:center}
+.indie .ring{border-color:#ed25cb;color:#ed25cb}.lola .ring{border-color:#00bcf4;color:#00bcf4}.gideon .ring{border-color:#20e776;color:#20e776}.ring:after{display:none}.ring span{color:#fff;font-size:12px}.ring svg{position:absolute;left:-6px;top:-6px;width:56px;height:56px;transform:rotate(-90deg)}
+.tasks{padding:2px 6px 0;gap:4px;grid-template-rows:repeat(5,1fr)}
+.task{grid-template-columns:16px 29px minmax(0,1fr) 7px;gap:7px;padding:5px 6px;border-radius:10px;border-color:#43537a;background:linear-gradient(115deg,rgba(38,37,73,.90),rgba(7,15,36,.92));box-shadow:inset 0 1px 5px #a6bdff20,0 2px 4px #0008}
+.lola .task{border-color:#285975;background:linear-gradient(115deg,#07354bed,#021c2ded)}
+.gideon .task{border-color:#2b685b;background:linear-gradient(115deg,#063c32ed,#031d20ed)}
+.check{width:15px;height:15px;border-width:1px;border-radius:4px;font-size:12px;background:#030e2580;box-shadow:0 0 3px #8ac5ff55}
+.taskIcon{width:29px;height:32px}.taskIcon svg{width:29px;height:29px;stroke-width:2.4}.label{font-size:9px;font-weight:400;line-height:1.24}.arrow{font-size:22px;font-weight:300}
+.task.done,.lola .task.done,.gideon .task.done{background:linear-gradient(#205f49,#153f31);border-color:#49dc91}
+.cheer{font-family:'Segoe Print','Comic Sans MS',cursive;font-size:16px;font-weight:400;line-height:1.05;transform:rotate(-8deg);padding:5px 10px;text-align:center;text-shadow:0 0 6px currentColor}
+.every{position:absolute;left:17px;top:562px;width:502px;height:162px;background:none;border:0;box-shadow:none;padding:6px 7px}
+.everyTop{height:36px;padding:0 5px}.everyTitle{font-size:23px;line-height:1}.everyTitle span{font-size:33px;vertical-align:-5px;margin-right:9px}.everySub{font-size:7px;letter-spacing:2px;margin-left:44px;margin-top:2px}.same{font-family:'Segoe Print','Comic Sans MS',cursive;font-size:10px;line-height:1.2;transform:rotate(-9deg);padding-top:1px}
+.basics{height:39px;margin-top:4px;border:1px solid #28445d;border-radius:9px;background:#02192bba}.basic{gap:9px;font-size:9px;position:relative}.basic+.basic:before{content:'';position:absolute;left:0;height:22px;border-left:1px solid #28445d}.basic svg{width:25px;height:25px;stroke-width:2.4}.basic:last-child svg{stroke:#35ef87}
+.everyGrid{height:67px;margin-top:5px;gap:7px}.person{padding:4px 10px;display:flex;flex-direction:column;border-radius:10px}.pname{font-size:14px;line-height:18px;font-weight:600}.allDone{width:100%;height:31px;margin-top:3px;font-size:10px;font-weight:600;box-shadow:0 0 8px currentColor,inset 0 0 7px #ffffff33;display:flex;align-items:center;justify-content:center;gap:9px}.allDone:before{content:'✓';border-radius:50%;width:20px;height:20px;font-size:17px;background:#ffffff80;color:#071827;line-height:20px}
+.person.indie{background:linear-gradient(130deg,#e210e4,#550674 75%);box-shadow:inset 0 0 9px #ff8aff88,0 0 7px #ff00e455}.person.lola{background:linear-gradient(130deg,#00adee,#003a60 75%);box-shadow:inset 0 0 9px #7ffaff88,0 0 7px #00aeff55}.person.gideon{background:linear-gradient(130deg,#00e36e,#004b32 75%);box-shadow:inset 0 0 9px #84ffb588,0 0 7px #00ff8255}
+.footer{position:absolute;left:17px;top:735px;width:502px;height:104px;background:none;border:0;box-shadow:none;padding:10px 20px;align-items:flex-start;overflow:visible}.footer:after{display:none}.quote{font-size:7px;letter-spacing:1px;line-height:1.4;padding-left:33px;color:#87aef0;margin-top:12px}.quote b{position:absolute;left:0;top:-11px;font-size:40px;color:#8b85ff}.quote:after{content:'';display:block;width:34px;border-bottom:2px solid #ff2353;margin-top:7px}.signature{align-self:flex-end;font-family:'Segoe Print','Comic Sans MS',cursive;transform:rotate(-12deg);font-size:15px;margin-bottom:20px}.heart{color:#ff1f69}
+.modalbg{inset:auto;left:0;top:0;width:100%;height:100%}.modal{max-width:90vw}
+/* Align live content with the background plate's retained panel edges. */
+.cards{left:10px;top:138px;width:517px;height:409px;grid-template-columns:174px 160px 171px;gap:6px}
+.every{left:10px;top:556px;width:517px;height:143px;padding:5px 7px}
+.everyTop{height:31px}.basics{height:34px}.everyGrid{height:59px}.person{padding-top:2px;padding-bottom:2px}.allDone{height:29px;margin-top:2px}
+.footer{top:709px;height:128px}
+
+@font-face{font-family:Caveat;src:url("assets/caveat.ttf") format("truetype");font-weight:400 700;font-display:swap}
+.scribble,.same,.signature,.cheer{font-family:Caveat,cursive}.scribble{font-size:14px}.same{font-size:13px}.cheer{font-size:21px}.signature{font-size:21px}
