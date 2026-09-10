@@ -1,0 +1,45 @@
+name: Install Dinner Vote
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/install-dinner-vote.yml'
+      - 'dinner-vote.js'
+      - 'dinner-vote.css'
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Add Dinner Vote references
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          css = '<link rel="stylesheet" href="dinner-vote.css?v=20260910-v1">'
+          js = '<script src="dinner-vote.js?v=20260910-v1"></script>'
+          if 'dinner-vote.css' not in s:
+              s = s.replace('</head>', css + '\n</head>')
+          if 'dinner-vote.js' not in s:
+              s = s.replace('</body>', js + '\n</body>')
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit wiring
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "Dinner Vote already wired"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Enable Dinner Vote on Family Hub"
+          git push
