@@ -1,7 +1,7 @@
 /* Portrait reference canvas, uniformly fitted to the Family Hub viewport. */
 html,body{background:#02070b;overflow:hidden}
 body{padding:0}
-.app{position:absolute;width:536px;height:848px;display:block;transform-origin:0 0;background:url('assets/family-hub-artwork.png') center/100% 100% no-repeat}
+.app{position:absolute;width:536px;height:848px;display:block;transform-origin:0 0;background-color:#040a11;background-image:url('assets/family-hub-artwork.png?v=20260910-bgrestore');background-position:center;background-size:100% 100%;background-repeat:no-repeat}
 .top{position:absolute;left:16px;top:10px;width:504px;height:128px;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible}
 .topShade{display:none}.topInner{padding:16px 8px;display:block}
 .brand{gap:10px}.logo{width:38px;height:30px;margin-top:0}.logo:before,.logo:after{width:10px;height:28px}.logo:after{left:21px}
