@@ -38,3 +38,8 @@ body{padding:0}
 
 @font-face{font-family:Caveat;src:url("assets/caveat.ttf") format("truetype");font-weight:400 700;font-display:swap}
 .scribble,.same,.signature,.cheer{font-family:Caveat,cursive}.scribble{font-size:14px}.same{font-size:13px}.cheer{font-size:21px}.signature{font-size:21px}
+
+/* Shared icon geometry and optical alignment. */
+.roleIcon{display:flex;align-items:center;justify-content:center}.roleIcon svg,.taskIcon svg,.basic svg{display:block;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;filter:none;overflow:visible;flex-shrink:0}.roleIcon svg{width:36px;height:36px;stroke-width:1.9}.taskIcon{width:30px;height:30px;display:flex;align-items:center;justify-content:center}.taskIcon svg{width:28px;height:28px}.indie .roleIcon,.indie .taskIcon{color:#ff42ba}.lola .roleIcon,.lola .taskIcon{color:#00caff}.gideon .roleIcon,.gideon .taskIcon{color:#35ed83}.roleIcon svg,.taskIcon svg{stroke:currentColor!important}.sunIcon{display:inline-block;width:32px;height:32px;vertical-align:-7px!important}.sunIcon svg{display:block;width:32px;height:32px;fill:none;stroke:#ffd43b;stroke-width:1.9;stroke-linecap:round}
+
+.gear{display:flex;align-items:center;justify-content:center;padding:7px}.gear svg{display:block;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round}
