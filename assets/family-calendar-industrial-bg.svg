@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 536 848">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#111615"/><stop offset=".55" stop-color="#070a0a"/><stop offset="1" stop-color="#020303"/></linearGradient>
+  <linearGradient id="iron" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#0d0f0f"/><stop offset=".45" stop-color="#303532"/><stop offset=".55" stop-color="#151817"/><stop offset="1" stop-color="#070909"/></linearGradient>
+  <linearGradient id="copper" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#4e2410"/><stop offset=".28" stop-color="#c76f2c"/><stop offset=".5" stop-color="#f0aa55"/><stop offset=".72" stop-color="#7b3818"/><stop offset="1" stop-color="#2a1208"/></linearGradient>
+  <radialGradient id="glow"><stop stop-color="#ffc96e" stop-opacity=".82"/><stop offset=".2" stop-color="#ff8d27" stop-opacity=".42"/><stop offset="1" stop-color="#ff6b13" stop-opacity="0"/></radialGradient>
+  <filter id="blur"><feGaussianBlur stdDeviation="11"/></filter>
+  <filter id="soft"><feGaussianBlur stdDeviation="3"/></filter>
+</defs>
+<rect width="536" height="848" fill="url(#bg)"/>
+<g opacity=".42" fill="#202725">
+  <path d="M0 130h536v4H0zM0 325h536v3H0zM0 560h536v4H0zM0 748h536v3H0z"/>
+  <path d="M84 0h3v848M178 0h3v848M360 0h3v848M452 0h3v848" opacity=".45"/>
+</g>
+<g opacity=".55" filter="url(#soft)">
+  <ellipse cx="76" cy="108" rx="106" ry="83" fill="url(#glow)"/>
+  <ellipse cx="468" cy="682" rx="118" ry="98" fill="url(#glow)" opacity=".6"/>
+</g>
+<!-- left pipe bank -->
+<g opacity=".92">
+  <rect x="14" y="0" width="18" height="848" rx="9" fill="url(#iron)" stroke="#4b2a17" stroke-width="2"/>
+  <rect x="22" y="36" width="8" height="778" fill="#0c0f0e" opacity=".55"/>
+  <g fill="url(#copper)" stroke="#1c0b05" stroke-width="2"><rect x="8" y="91" width="30" height="14" rx="5"/><rect x="8" y="286" width="30" height="14" rx="5"/><rect x="8" y="520" width="30" height="14" rx="5"/><rect x="8" y="713" width="30" height="14" rx="5"/></g>
+</g>
+<!-- right pipe bank -->
+<g opacity=".92">
+  <rect x="502" y="0" width="18" height="848" rx="9" fill="url(#iron)" stroke="#4b2a17" stroke-width="2"/>
+  <rect x="500" y="126" width="20" height="26" rx="4" fill="url(#copper)" stroke="#1c0b05" stroke-width="2"/>
+  <rect x="500" y="444" width="20" height="26" rx="4" fill="url(#copper)" stroke="#1c0b05" stroke-width="2"/>
+  <rect x="500" y="735" width="20" height="26" rx="4" fill="url(#copper)" stroke="#1c0b05" stroke-width="2"/>
+</g>
+<!-- top factory silhouettes -->
+<g opacity=".70" stroke="#2a160d" stroke-width="2">
+  <rect x="292" y="40" width="38" height="88" rx="4" fill="#161c1a"/><rect x="301" y="20" width="20" height="25" rx="4" fill="#222a27"/>
+  <rect x="347" y="22" width="24" height="106" rx="4" fill="#131817"/><rect x="353" y="8" width="12" height="20" rx="3" fill="#202725"/>
+  <rect x="390" y="56" width="52" height="72" rx="5" fill="#141918"/><rect x="405" y="34" width="20" height="24" rx="4" fill="#242a27"/>
+  <path d="M278 128h177" stroke="#b9652a" stroke-width="4" opacity=".65"/>
+</g>
+<!-- gear cluster -->
+<g transform="translate(70 690)" opacity=".65">
+  <g fill="#1b211f" stroke="#8a4b24" stroke-width="3">
+    <circle r="60"/><circle r="20" fill="#070909"/><path d="M0-76v20M0 56v20M-76 0h20M56 0h20M-54-54l14 14M40 40l14 14M54-54L40-40M-40 40l-14 14" stroke-width="12" stroke-linecap="square"/>
+  </g>
+  <circle r="7" fill="#c97d37"/>
+</g>
+<g transform="translate(454 742)" opacity=".72">
+  <g fill="#1b211f" stroke="#9a5427" stroke-width="3">
+    <circle r="48"/><circle r="15" fill="#070909"/><path d="M0-61v16M0 45v16M-61 0h16M45 0h16M-43-43l11 11M32 32l11 11M43-43L32-32M-32 32l-11 11" stroke-width="10" stroke-linecap="square"/>
+  </g>
+</g>
+<!-- bottom pipe network -->
+<g opacity=".88" fill="none" stroke-linecap="round">
+  <path d="M12 814H186q22 0 22-22v-38q0-18 18-18h76q20 0 20 20v32q0 20 20 20h182" stroke="#121716" stroke-width="26"/>
+  <path d="M12 814H186q22 0 22-22v-38q0-18 18-18h76q20 0 20 20v32q0 20 20 20h182" stroke="url(#copper)" stroke-width="8"/>
+</g>
+<!-- pressure gauge -->
+<g transform="translate(438 616)" opacity=".78">
+  <circle r="48" fill="#151918" stroke="#6d3a1b" stroke-width="5"/>
+  <circle r="38" fill="#d7c6a3" stroke="#25160d" stroke-width="2"/>
+  <g stroke="#2b2217" stroke-width="2"><path d="M0-32v7M23-23l-5 5M32 0h-7M23 23l-5-5M0 32v-7M-23 23l5-5M-32 0h7M-23-23l5 5"/></g>
+  <path d="M0 0L18-14" stroke="#8b221b" stroke-width="4" stroke-linecap="round"/><circle r="4" fill="#2b2217"/>
+</g>
+<!-- hanging bulbs -->
+<g opacity=".75">
+  <path d="M96 0v73M154 0v46" stroke="#4d321f" stroke-width="3"/>
+  <g transform="translate(96 82)"><ellipse rx="20" ry="28" fill="url(#glow)"/><path d="M-7-8q7-14 14 0v13q-7 8-14 0z" fill="#ffb94d" stroke="#5f3216" stroke-width="2"/></g>
+  <g transform="translate(154 55)"><ellipse rx="17" ry="24" fill="url(#glow)"/><path d="M-6-7q6-12 12 0V4q-6 7-12 0z" fill="#ffb94d" stroke="#5f3216" stroke-width="2"/></g>
+</g>
+<!-- steam haze -->
+<g fill="#c9c1b5" opacity=".07" filter="url(#blur)">
+  <ellipse cx="354" cy="148" rx="72" ry="30"/><ellipse cx="405" cy="170" rx="84" ry="36"/><ellipse cx="472" cy="230" rx="80" ry="36"/><ellipse cx="95" cy="812" rx="110" ry="32"/>
+</g>
+<!-- edge vignette -->
+<rect x="2" y="2" width="532" height="844" rx="18" fill="none" stroke="#2d160b" stroke-width="10" opacity=".72"/>
+<rect x="8" y="8" width="520" height="832" rx="14" fill="none" stroke="#b2672d" stroke-width="2" opacity=".55"/>
+</svg>
