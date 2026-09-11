@@ -6,7 +6,7 @@
   var ENDPOINT = 'https://jacijznifstuwxylgvth.supabase.co/functions/v1/family-calendar';
   var PIN_KEY = 'family-calendar-pin';
   var month, events = [], synced = null, loadedMonth = '', requestId = 0, activeRequest = null;
-  var standalone = false, root, panel, content, detail, status, returnFocus = null;
+  var standalone = false, root, panel, content, detail, status, returnFocus = null, selectedDay = '', dialogView = '';
   function byId(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function pad(n) { return n < 10 ? '0' + n : String(n); }
@@ -90,18 +90,58 @@
     for (i = 0; i < buttons.length; i++) buttons[i].onclick = function () { var e = events[+this.getAttribute('data-event')]; if (e) showEvent(e); };
   }
   function showDialog(title, html) {
-    returnFocus = document.activeElement;
+    if (detail.style.display !== 'flex') returnFocus = document.activeElement;
     detail.innerHTML = '<div class="fc4-dialogCard"><div class="fc4-dialogTitle">' + esc(title) + '</div>' + html + '<button type="button" class="fc4-btn fc4-dialogClose">Close</button></div>';
     detail.style.display = 'flex';
     detail.setAttribute('aria-hidden', 'false');
     var close = detail.querySelector('.fc4-dialogClose');
-    close.onclick = closeDialog; close.focus();
+    close.textContent = dialogView === 'event' && selectedDay ? 'Back to day' : 'Back to month';
+    close.onclick = dismissDetail; close.focus();
   }
-  function closeDialog() { detail.style.display = 'none'; detail.setAttribute('aria-hidden', 'true'); if (returnFocus && document.documentElement.contains(returnFocus)) returnFocus.focus(); }
+  function closeDialog() { detail.style.display = 'none'; detail.setAttribute('aria-hidden', 'true'); selectedDay = ''; dialogView = ''; if (returnFocus && document.documentElement.contains(returnFocus)) returnFocus.focus(); returnFocus = null; }
+  function dismissDetail() { if (dialogView === 'event' && selectedDay) showDay(selectedDay); else closeDialog(); }
   function showEvent(ev) {
+    dialogView = 'event';
     showDialog(ev.title || 'Event details', '<div class="fc4-dialogOwner ' + owner(ev) + '">' + esc(ev.owner_label || 'Family') + '</div><p class="fc4-dialogWhen">' + esc(when(ev)) + '</p>' + (ev.location ? '<p class="fc4-dialogWhere">' + esc(ev.location) + '</p>' : ''));
   }
   function showEventList(title, list) { var html = '<div class="fc4-dialogList">', i; for (i = 0; i < list.length; i++) html += eventButton(list[i], true); html += '</div>'; showDialog(title, html); wireEvents(detail); }
+  function showDay(dayKey) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey)) return;
+    selectedDay = dayKey; dialogView = 'day';
+    var day = fromKey(dayKey), list = [], i;
+    for (i = 0; i < events.length; i++) if (overlaps(events[i], dayKey, key(plus(day, 1)))) list.push(events[i]);
+    list.sort(sortEvents);
+    var title = dayName(day) + ' ' + dateLabel(day) + ' ' + day.getUTCFullYear();
+    if (list.length) showEventList(title, list);
+    else showDialog(title, '<p class="fc4-dialogWhen">No synced events for this date.</p>');
+  }
+  function openMonthDay(cell) {
+    if (!cell) return;
+    var button = cell.querySelector('.fc4-monthDate');
+    if (button) button.focus();
+    showDay(cell.getAttribute('data-date'));
+  }
+  function wireMonthDays() {
+    var cells = content.querySelectorAll('.fc4-monthCell'), bars = content.querySelectorAll('.fc4-monthLong'), i;
+    // Every tap in a month square opens its day, including preview pills and +more.
+    for (i = 0; i < cells.length; i++) {
+      cells[i].style.cursor = 'pointer';
+      cells[i].onclick = function() { openMonthDay(this); };
+    }
+    for (i = 0; i < bars.length; i++) bars[i].onclick = function(e) {
+      // A spanning bar opens the date actually touched, not the event start date.
+      var rowCells = this.parentNode.parentNode.querySelectorAll('.fc4-monthCell');
+      var bar = this.getBoundingClientRect(), x = e && e.detail ? e.clientX : bar.left + 1;
+      var chosen = null, best = Infinity, j, box, distance;
+      for (j = 0; j < rowCells.length; j++) {
+        box = rowCells[j].getBoundingClientRect();
+        distance = Math.abs(x - (box.left + box.width / 2));
+        if (distance < best) { best = distance; chosen = rowCells[j]; }
+      }
+      if (e) e.stopPropagation();
+      openMonthDay(chosen);
+    };
+  }
   function render() {
     var bounds = monthBounds(month), all = events.slice().sort(sortEvents), now = key(today());
     var html = '<div class="fc4-monthBoard rows-' + bounds.rows + '"><div class="fc4-monthWeekdays">';
@@ -151,15 +191,8 @@
       }
       html += '</div>';
     }
-    html += '</div><div class="fc4-monthHint">Tap a date for all events. Tap a card for details.</div></div>';
-    content.innerHTML = html; wireEvents(content);
-    var days = content.querySelectorAll('[data-month-day]');
-    for (i = 0; i < days.length; i++) days[i].onclick = function() {
-      var day = fromKey(this.getAttribute('data-month-day')), list = [], j;
-      for (j = 0; j < all.length; j++) if (overlaps(all[j], key(day), key(plus(day,1)))) list.push(all[j]);
-      if (list.length) showEventList(dayName(day) + ' ' + dateLabel(day), list);
-      else showDialog(dayName(day) + ' ' + dateLabel(day), '<p class="fc4-dialogWhen">No synced events for this date.</p>');
-    };
+    html += '</div><div class="fc4-monthHint">Tap a day, then choose an event for details.</div></div>';
+    content.innerHTML = html; wireMonthDays();
     var count = inMonth().length;
     byId('fc4Total').textContent = count + (count === 1 ? ' event this month' : ' events this month');
   }
@@ -217,8 +250,8 @@
     panel = root.querySelector('.fc4-panel'); content = byId('fc4Content'); detail = byId('fc4Detail'); status = byId('fc4Status');
     byId('fc4Prev').onclick = function () { navigate(-1); }; byId('fc4Next').onclick = function () { navigate(1); }; byId('fc4Today').onclick = function () { navigate(0); };
     byId('fc4Close').onclick = standalone ? function () { requestId++; if (activeRequest) activeRequest.abort(); savePin(''); events = []; loadedMonth = ''; closeDialog(); showPin(); } : close;
-    detail.onclick = function (e) { if (e.target === detail) closeDialog(); };
-    document.addEventListener('keydown', function (e) { if (e.keyCode === 27) { if (detail.style.display === 'flex') closeDialog(); else if (!standalone) close(); } });
+    detail.onclick = function (e) { if (e.target === detail) dismissDetail(); };
+    document.addEventListener('keydown', function (e) { if (e.keyCode === 27) { if (detail.style.display === 'flex') dismissDetail(); else if (!standalone) close(); } });
     if (standalone) load();
     setInterval(function () { if (pin() && (standalone || root.style.display === 'flex') && detail.style.display !== 'flex') load(true); }, 300000);
   }
