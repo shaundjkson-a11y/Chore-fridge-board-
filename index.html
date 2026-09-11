@@ -27,8 +27,9 @@ button{font:inherit}
 </style>
 <link rel="stylesheet" href="fridge.css?v=20260910-icons">
 <link rel="stylesheet" href="dinner-vote.css?v=20260910-main-dinner1">
-<link rel="stylesheet" href="family-calendar.css?v=20260911-cal1">
+<link rel="stylesheet" href="family-calendar.css?v=20260911-cal2">
 <link rel="stylesheet" href="family-calendar-industrial.css?v=20260911-steam1">
+<link rel="stylesheet" href="family-calendar-industrial-v2.css?v=20260911-steam2">
 </head>
 <body>
 <div class="app">
@@ -65,6 +66,6 @@ function render(){document.getElementById("day").innerHTML=dayNames[now.getDay()
 function allHandler(i){return function(){setDone(i,"every","all",!basicDone(i));render()}}for(var a=0;a<3;a++){document.getElementById("all"+a).onclick=allHandler(a)}document.getElementById("settings").onclick=function(){document.getElementById("modal").style.display="flex"};document.getElementById("cancel").onclick=function(){document.getElementById("modal").style.display="none"};document.getElementById("reset").onclick=function(){for(var i=0;i<3;i++){var r=roles[roleIndex(i)];for(var j=0;j<r.tasks.length;j++){localStorage.removeItem(storageKey(i,"role",j))}localStorage.removeItem(storageKey(i,"every","all"))}document.getElementById("modal").style.display="none";render()};setInterval(function(){if(dateKey(new Date())!==today){location.reload()}},60000);render()})();
 </script>
 <script src="dinner-vote.js?v=20260910-cloud3"></script>
-<script src="family-calendar.js?v=20260911-cal1"></script>
+<script src="family-calendar.js?v=20260911-cal2"></script>
 </body>
 </html>
