@@ -1,0 +1,51 @@
+name: Install Family Calendar
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/install-family-calendar.yml'
+      - 'family-calendar.js'
+      - 'family-calendar.css'
+      - 'calendar.html'
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Wire Family Calendar into fridge board
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          css = '<link rel="stylesheet" href="family-calendar.css?v=20260911-cal1">'
+          js = '<script src="family-calendar.js?v=20260911-cal1"></script>'
+          if 'family-calendar.css' not in s:
+              s = s.replace('</head>', css + '\n</head>')
+          else:
+              s = re.sub(r'<link rel="stylesheet" href="family-calendar\.css\?v=[^"]+">', css, s)
+          if 'family-calendar.js' not in s:
+              s = s.replace('</body>', js + '\n</body>')
+          else:
+              s = re.sub(r'<script src="family-calendar\.js\?v=[^"]+"></script>', js, s)
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit Family Calendar wiring
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "Family Calendar already wired"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Enable Family Calendar on Family Hub"
+          git push
