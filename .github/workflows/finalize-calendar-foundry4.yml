@@ -1,0 +1,68 @@
+name: Finalize Calendar Foundry 4
+on:
+  push:
+    branches: [calendar-foundry4-release]
+    paths: ['.github/workflows/finalize-calendar-foundry4.yml']
+permissions:
+  contents: write
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install test tools
+        run: python -m pip install --quiet Pillow==11.3.0 playwright==1.55.0 PyYAML==6.0.2
+      - name: Assemble the reviewed image and stage calendar files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import yaml, subprocess
+          steps=yaml.safe_load(Path('.github/workflows/prepare-calendar-foundry4.yml').read_text())['jobs']['prepare']['steps']
+          source=next(s['run'] for s in steps if s.get('name')=='Recover prepared release and wire calendar only')
+          start=source.index('parts = [blob(s) for s in image_shas]')
+          end=source.index("Path('assets/calendar-foundry-art-v4.jpg').write_bytes(data)")
+          replacement="""# The 2183-byte upload was an incomplete duplicate of the next 3000-byte part.
+          data = b''.join(blob(s) for s in image_shas if s != '171866013861020db5cace7cff8a96ae810f4c88')
+          assert hashlib.sha256(data).hexdigest() == '43daf59ef19bc2dada2b3f881f523e8cce4fa162a7ab2d2406ad87c505620f16', 'Artwork does not match reviewed image'
+          im = Image.open(io.BytesIO(data)); im.load()
+          dims = im.size; assert dims == (536,236)
+          name = 'Reviewed factory and pipe artwork from the approved reference'
+          """
+          source=source[:start]+replacement+source[end:]
+          start=source.index("Path('.github/workflows/install-family-calendar.yml').write_text(")
+          end=source.index("(evidence/'asset-report.json')",start)
+          source=source[:start]+source[end:]
+          subprocess.run(['bash','-e','-c',source],check=True)
+          PY
+      - name: Install test browser
+        run: python -m playwright install --with-deps chromium
+      - name: Repeat browser checks on final assets
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import yaml, subprocess, os, shutil
+          steps=yaml.safe_load(Path('.github/workflows/prepare-calendar-foundry4.yml').read_text())['jobs']['prepare']['steps']
+          source=next(s['run'] for s in steps if s.get('name')=='Browser checks with synthetic calendar data only')
+          subprocess.run(['bash','-e','-c',source],check=True)
+          out=Path(os.environ['RUNNER_TEMP'])/'fc4-evidence'/'release';out.mkdir(exist_ok=True)
+          for f in ['family-calendar-foundry4.js','family-calendar-foundry4.css','calendar.html','index.html']:
+              shutil.copyfile(f,out/Path(f).name)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: calendar-foundry4-final-review
+          path: ${{ runner.temp }}/fc4-evidence/
+      - name: Commit tested site files without modifying workflow permissions
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/calendar-foundry-art-v4.jpg family-calendar-foundry4.js family-calendar-foundry4.css index.html calendar.html
+          git diff --cached --stat
+          git commit -m 'Release Foundry 4 calendar with verified raster art and tested phone and fridge layouts'
+          git push origin HEAD:calendar-foundry4-release
