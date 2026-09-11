@@ -1,0 +1,206 @@
+/* Family Calendar v3: make the artwork visible and make the fridge view read like a premium family dashboard, not a spreadsheet. */
+
+/* The underlying factory art is now intentionally visible. */
+.fcPanel{
+  background-image:
+    linear-gradient(180deg,rgba(2,4,4,.18) 0%,rgba(2,4,4,.34) 26%,rgba(2,3,3,.48) 100%),
+    radial-gradient(circle at 77% 12%,rgba(255,158,60,.12),transparent 25%),
+    url('assets/family-calendar-industrial-bg.svg?v=3');
+  background-size:cover,cover,cover;
+  background-position:center,center,center;
+}
+.fcHead{
+  height:92px;
+  flex-basis:92px;
+  padding:22px 18px 12px;
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(90deg,rgba(7,9,8,.88) 0%,rgba(7,9,8,.62) 47%,rgba(7,9,8,.20) 100%);
+  border-bottom:1px solid rgba(205,120,48,.72);
+}
+.fcHead:before{
+  content:"";
+  position:absolute;
+  right:22px;
+  top:9px;
+  width:164px;
+  height:70px;
+  opacity:.38;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 18% 70%,rgba(255,173,71,.64) 0 3px,transparent 4px),
+    linear-gradient(90deg,transparent 10%,rgba(196,108,43,.60) 10% 12%,transparent 12% 27%,rgba(196,108,43,.50) 27% 30%,transparent 30% 51%,rgba(196,108,43,.46) 51% 54%,transparent 54%),
+    linear-gradient(180deg,transparent 57%,rgba(197,111,44,.46) 57% 61%,transparent 61%);
+}
+.fcTitle,.fcSub,.fcClose{position:relative;z-index:2}
+.fcTitle{font-size:28px;text-shadow:0 2px 0 #000,0 0 13px rgba(255,167,64,.30)}
+.fcControls{
+  background:linear-gradient(180deg,rgba(28,20,15,.70),rgba(7,9,8,.62));
+  border-bottom-color:rgba(128,75,34,.66);
+}
+.fcLegend{
+  background:rgba(5,8,7,.62);
+  border-bottom-color:rgba(128,75,34,.58);
+}
+.fcGridWrap{
+  padding:10px 14px 13px;
+  background:linear-gradient(180deg,rgba(3,5,5,.15),rgba(2,3,3,.22));
+}
+.fcGridWrap:before{
+  inset:7px;
+  border-color:rgba(199,111,44,.14);
+  box-shadow:inset 0 0 38px rgba(0,0,0,.18);
+}
+
+/* ----- New week-at-a-glance agenda ----- */
+.fcAgendaBoard{
+  height:100%;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+.fcLongEvents{
+  display:grid;
+  grid-auto-rows:minmax(42px,auto);
+  gap:5px;
+  flex:0 0 auto;
+}
+.fcLongEvents.empty{display:none}
+.fcLongEvent{
+  width:100%;
+  min-height:42px;
+  border-radius:9px;
+  border:1px solid rgba(204,126,56,.56);
+  display:grid;
+  grid-template-columns:86px minmax(0,1fr) auto;
+  align-items:center;
+  gap:9px;
+  padding:7px 10px;
+  color:#fff;
+  text-align:left;
+  background:linear-gradient(90deg,rgba(25,27,25,.93),rgba(9,12,11,.82));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 12px rgba(0,0,0,.28);
+}
+.fcLongEvent:active{transform:scale(.995)}
+.fcLongEvent.shaun{border-left:4px solid var(--fc-shaun);box-shadow:inset 0 0 18px rgba(37,197,255,.08),0 4px 12px rgba(0,0,0,.28)}
+.fcLongEvent.mich{border-left:4px solid var(--fc-mich);box-shadow:inset 0 0 18px rgba(255,79,169,.08),0 4px 12px rgba(0,0,0,.28)}
+.fcLongEvent.family{border-left:4px solid var(--fc-family);box-shadow:inset 0 0 18px rgba(80,239,139,.08),0 4px 12px rgba(0,0,0,.28)}
+.fcLongOwner{
+  font-size:7px;
+  letter-spacing:1.2px;
+  text-transform:uppercase;
+  color:#c5a677;
+}
+.fcLongMeta{font-size:7px;color:#9a8a73;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.fcLongTitle{font-size:11px;font-weight:900;color:#fff5e5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fcLongArrow{font-size:20px;color:#d59a4b}
+
+.fcAgendaDays{
+  flex:1 1 auto;
+  min-height:0;
+  display:grid;
+  grid-template-rows:repeat(7,minmax(0,1fr));
+  gap:5px;
+}
+.fcAgendaDay{
+  min-height:0;
+  display:grid;
+  grid-template-columns:58px minmax(0,1fr);
+  gap:6px;
+}
+.fcAgendaDate{
+  border:1px solid rgba(131,81,40,.66);
+  border-radius:9px;
+  background:linear-gradient(145deg,rgba(37,31,25,.92),rgba(10,12,11,.90));
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  color:#bba081;
+  box-shadow:inset 0 1px 0 rgba(255,219,158,.05);
+}
+.fcAgendaDate.today{
+  border-color:#e2a44f;
+  background:linear-gradient(145deg,rgba(73,48,27,.94),rgba(22,16,12,.92));
+  box-shadow:inset 0 0 0 1px rgba(255,204,114,.14),0 0 10px rgba(232,155,61,.15);
+}
+.fcAgendaDayName{font-size:7px;letter-spacing:1.2px;text-transform:uppercase}
+.fcAgendaDayNum{font-family:Georgia,'Times New Roman',serif;font-size:19px;font-weight:700;color:#f6dfbb;line-height:1.05;margin-top:1px}
+.fcAgendaEvents{
+  min-width:0;
+  min-height:0;
+  display:flex;
+  gap:5px;
+  align-items:stretch;
+}
+.fcAgendaClear{
+  flex:1;
+  border:1px solid rgba(91,64,43,.38);
+  border-radius:9px;
+  background:rgba(7,11,10,.45);
+  color:#685b49;
+  font-size:8px;
+  letter-spacing:.7px;
+  text-transform:uppercase;
+  display:flex;
+  align-items:center;
+  padding:0 10px;
+}
+.fcAgendaEvent{
+  flex:1 1 0;
+  min-width:0;
+  border-radius:9px;
+  border:1px solid rgba(255,255,255,.07);
+  color:#fff;
+  text-align:left;
+  padding:6px 7px 5px;
+  display:grid;
+  grid-template-columns:1fr auto;
+  grid-template-rows:auto 1fr;
+  column-gap:6px;
+  overflow:hidden;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 2px 6px rgba(0,0,0,.25);
+}
+.fcAgendaEvent.shaun{background:linear-gradient(135deg,rgba(8,78,102,.95),rgba(4,30,40,.94));border-left:3px solid var(--fc-shaun)}
+.fcAgendaEvent.mich{background:linear-gradient(135deg,rgba(92,22,63,.95),rgba(40,10,28,.94));border-left:3px solid var(--fc-mich)}
+.fcAgendaEvent.family{background:linear-gradient(135deg,rgba(19,82,50,.95),rgba(7,35,22,.94));border-left:3px solid var(--fc-family)}
+.fcAgendaTime{font-size:7px;color:#dccbb2;line-height:1;white-space:nowrap}
+.fcAgendaOwner{font-size:6px;color:rgba(255,255,255,.58);text-transform:uppercase;letter-spacing:.7px;white-space:nowrap}
+.fcAgendaTitle{
+  grid-column:1 / span 2;
+  align-self:center;
+  font-size:10px;
+  font-weight:900;
+  line-height:1.05;
+  margin-top:3px;
+  color:#fff7e9;
+  white-space:normal;
+  overflow:hidden;
+  max-height:22px;
+}
+.fcAgendaMore{
+  flex:0 0 38px;
+  border:1px solid rgba(167,103,48,.44);
+  border-radius:9px;
+  background:rgba(16,14,12,.78);
+  color:#c7a274;
+  font-size:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+/* Let the industrial art show around the schedule. */
+.fcStatus{background:rgba(5,8,7,.70)}
+.fcPanel:after{opacity:.38}
+
+/* The standalone page keeps the same data/UI but gets a little more depth. */
+.fcStandaloneBody{
+  background-image:
+    linear-gradient(180deg,rgba(3,5,5,.34),rgba(2,3,3,.66)),
+    url('assets/family-calendar-industrial-bg.svg?v=3');
+  background-size:cover;
+  background-position:center top;
+}
