@@ -1,0 +1,329 @@
+/* Industrial / steampunk skin for Family Calendar only.
+   Chore board artwork, mountains, task icons and layout are intentionally untouched. */
+
+:root{
+  --fc-iron-0:#070908;
+  --fc-iron-1:#0d1111;
+  --fc-iron-2:#151a19;
+  --fc-steel:#202725;
+  --fc-copper:#b56a2e;
+  --fc-copper-hi:#f0a64b;
+  --fc-brass:#d5a047;
+  --fc-soot:#020403;
+  --fc-cream:#f6e4c2;
+  --fc-muted:#a8987f;
+  --fc-shaun:#25c5ff;
+  --fc-mich:#ff4fa9;
+  --fc-family:#50ef8b;
+}
+
+/* ---------- FRIDGE CALENDAR OVERLAY ---------- */
+.fcOverlay{
+  background:
+    radial-gradient(circle at 18% 12%,rgba(255,151,44,.14),transparent 30%),
+    radial-gradient(circle at 84% 88%,rgba(255,110,20,.08),transparent 34%),
+    rgba(2,4,4,.94);
+}
+.fcPanel{
+  position:relative;
+  border:2px solid #73401e;
+  border-radius:14px;
+  background:
+    linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px) 0 0/18px 100%,
+    linear-gradient(180deg,rgba(255,255,255,.018) 1px,transparent 1px) 0 0/100% 18px,
+    radial-gradient(circle at 50% -12%,rgba(255,160,55,.12),transparent 34%),
+    linear-gradient(180deg,#151a19 0%,#0b0f0f 52%,#070909 100%);
+  box-shadow:
+    0 22px 60px rgba(0,0,0,.75),
+    inset 0 0 0 1px #d28b43,
+    inset 0 0 0 4px #25150d,
+    inset 0 0 34px rgba(0,0,0,.72),
+    0 0 24px rgba(204,111,35,.18);
+}
+.fcPanel:before,.fcPanel:after{
+  content:"";
+  position:absolute;
+  left:16px;right:16px;
+  height:6px;
+  z-index:3;
+  pointer-events:none;
+  border-radius:6px;
+  background:linear-gradient(180deg,#6e3b1d,#e19a4c 45%,#5b2e17 55%,#2a150c);
+  box-shadow:0 1px 0 #ffcb76,inset 0 -1px 1px #110805,0 0 9px rgba(223,125,42,.28);
+}
+.fcPanel:before{top:5px}.fcPanel:after{bottom:5px}
+.fcHead{
+  height:82px;flex-basis:82px;
+  padding:18px 18px 12px;
+  border-bottom:1px solid #75421f;
+  background:
+    radial-gradient(circle at 7px 7px,#d69043 0 2px,#432310 2.5px 4px,transparent 4.5px),
+    radial-gradient(circle at calc(100% - 7px) 7px,#d69043 0 2px,#432310 2.5px 4px,transparent 4.5px),
+    linear-gradient(180deg,#1b211f,#0c1010);
+  box-shadow:inset 0 -1px 0 #2c170c,inset 0 10px 22px rgba(255,142,44,.035);
+}
+.fcTitle{
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:25px;
+  letter-spacing:.3px;
+  color:#f7dfb8;
+  text-shadow:0 1px 0 #000,0 0 10px rgba(241,150,57,.26);
+}
+.fcSub{color:#bd9b74;letter-spacing:1.8px}
+.fcClose{
+  border-color:#8c5629;
+  border-radius:8px;
+  background:linear-gradient(#30231a,#14100d);
+  color:#f0c27d;
+  box-shadow:inset 0 0 0 1px #1c0d08,0 0 8px rgba(213,126,44,.16);
+}
+.fcControls{
+  height:54px;flex-basis:54px;
+  padding:9px 11px;
+  border-bottom:1px solid #4e2b16;
+  background:linear-gradient(180deg,rgba(54,39,28,.72),rgba(12,15,14,.78));
+}
+.fcBtn{
+  border:1px solid #865024;
+  border-radius:7px;
+  background:linear-gradient(180deg,#32241a,#17120e);
+  color:#ead4b4;
+  box-shadow:inset 0 1px 0 rgba(255,210,143,.10),0 1px 0 #020202;
+  text-transform:uppercase;
+  letter-spacing:.65px;
+}
+.fcBtn:active{background:linear-gradient(180deg,#1b130e,#3b281b);box-shadow:inset 0 1px 5px #000}
+.fcRange{
+  color:#f3d09d;
+  font-family:Georgia,'Times New Roman',serif;
+  letter-spacing:.35px;
+}
+.fcLegend{
+  height:34px;flex-basis:34px;
+  border-bottom:1px solid #4e2b16;
+  background:linear-gradient(180deg,#111615,#090c0c);
+  color:#b9aa93;
+}
+.fcDot{box-shadow:0 0 8px currentColor;border:1px solid rgba(255,255,255,.20)}
+.fcDot.shaun{background:var(--fc-shaun);color:var(--fc-shaun)}
+.fcDot.mich{background:var(--fc-mich);color:var(--fc-mich)}
+.fcDot.family{background:var(--fc-family);color:var(--fc-family)}
+.fcGridWrap{padding:8px 9px 11px;background:radial-gradient(circle at 50% 0,rgba(255,150,46,.045),transparent 38%)}
+.fcWeekGrid{gap:5px;grid-template-columns:56px repeat(7,1fr)}
+.fcCorner,.fcDayHead,.fcPerson,.fcCell{
+  border-color:#4c3828;
+  border-radius:6px;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.018),transparent 42%),
+    linear-gradient(145deg,#171c1b,#0b0e0e);
+  box-shadow:inset 0 0 0 1px rgba(255,180,93,.025),inset 0 -8px 14px rgba(0,0,0,.18);
+}
+.fcCorner{
+  background:
+    radial-gradient(circle,#b97737 0 2px,#3a1d0e 2.5px 4px,transparent 4.5px) 7px 7px/12px 12px no-repeat,
+    linear-gradient(145deg,#171c1b,#090c0c);
+}
+.fcDayHead{border-color:#60401f;background:linear-gradient(180deg,#242523,#111413)}
+.fcDayName{color:#b39670;letter-spacing:1px}
+.fcDayNum{font-family:Georgia,'Times New Roman',serif;color:#f4dfbd;font-size:16px}
+.fcDayHead.today{
+  border-color:#e3a64f;
+  background:linear-gradient(180deg,#3b2a1b,#17120e);
+  box-shadow:inset 0 0 0 1px rgba(255,204,113,.22),0 0 10px rgba(227,149,58,.22);
+}
+.fcPerson{
+  border-color:#5b3922;
+  background:linear-gradient(180deg,#211915,#0d0d0c);
+  text-shadow:0 0 7px currentColor;
+}
+.fcPerson.shaun{color:var(--fc-shaun)}.fcPerson.mich{color:var(--fc-mich)}.fcPerson.family{color:var(--fc-family)}
+.fcCell.today{background:linear-gradient(145deg,#221b15,#101311)}
+.fcEmpty{color:#584a39}
+.fcEvent{
+  border-radius:5px;
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 3px rgba(0,0,0,.45);
+}
+.fcEvent.shaun{background:linear-gradient(135deg,#083f50,#071d27);border-left:3px solid var(--fc-shaun);box-shadow:inset 0 0 12px rgba(37,197,255,.10),0 0 6px rgba(37,197,255,.09)}
+.fcEvent.mich{background:linear-gradient(135deg,#4b1935,#24101c);border-left:3px solid var(--fc-mich);box-shadow:inset 0 0 12px rgba(255,79,169,.10),0 0 6px rgba(255,79,169,.08)}
+.fcEvent.family{background:linear-gradient(135deg,#153c29,#0b2117);border-left:3px solid var(--fc-family);box-shadow:inset 0 0 12px rgba(80,239,139,.09),0 0 6px rgba(80,239,139,.08)}
+.fcEventTime{color:#c9bda9}.fcEventTitle{color:#fff6e8}
+.fcMore{color:#856c50}
+.fcStatus{
+  border-top:1px solid #4e2b16;
+  background:#090c0b;
+  color:#8d775d;
+  letter-spacing:.5px;
+}
+
+/* Fridge detail panel */
+.fcDetail{background:rgba(0,0,0,.78)}
+.fcDetailCard{
+  border:2px solid #76431f;
+  border-radius:12px;
+  background:
+    radial-gradient(circle at 10px 10px,#d28b43 0 2px,#49250f 2.5px 4px,transparent 4.5px),
+    radial-gradient(circle at calc(100% - 10px) 10px,#d28b43 0 2px,#49250f 2.5px 4px,transparent 4.5px),
+    linear-gradient(180deg,#202321,#0d1010);
+  box-shadow:inset 0 0 0 1px #1b0d07,0 18px 42px rgba(0,0,0,.72),0 0 18px rgba(203,112,37,.18);
+}
+.fcDetailOwner{color:#c99a62;letter-spacing:1.7px}
+.fcDetailTitle{font-family:Georgia,'Times New Roman',serif;color:#f8e4c4}
+.fcDetailWhen,.fcDetailWhere{color:#c2b29c}
+.fcDetailClose{border-color:#7b4822;background:linear-gradient(#312218,#17110d);color:#f2d4a8}
+
+/* ---------- PIN / SAFE PANEL ---------- */
+.fcPinBox{
+  position:relative;
+  border:2px solid #75431f;
+  border-radius:14px;
+  background:
+    radial-gradient(circle at 12px 12px,#d08a40 0 2px,#47250f 2.5px 4px,transparent 4.5px),
+    radial-gradient(circle at calc(100% - 12px) 12px,#d08a40 0 2px,#47250f 2.5px 4px,transparent 4.5px),
+    linear-gradient(180deg,#222724,#0b0f0e);
+  box-shadow:inset 0 0 0 1px #1b0d07,0 18px 45px rgba(0,0,0,.60),0 0 18px rgba(216,128,45,.14);
+}
+.fcPinTitle{font-family:Georgia,'Times New Roman',serif;color:#f4dfbd}
+.fcPinHelp{color:#ad9577}
+.fcPinInput{border-color:#815029;background:#080b0a;color:#ffd99a;box-shadow:inset 0 0 12px #000}
+.fcPinInput:focus{border-color:#e0a24a;box-shadow:inset 0 0 12px #000,0 0 8px rgba(224,162,74,.25)}
+.fcPinSubmit{border-color:#d69a45;background:linear-gradient(#7a461e,#38210f);color:#fff0d5;box-shadow:inset 0 1px 0 rgba(255,223,161,.18)}
+
+/* ---------- STANDALONE PHONE / TABLET PAGE ---------- */
+.fcStandaloneBody{
+  margin:0;
+  min-height:100%;
+  color:var(--fc-cream);
+  font-family:Arial,Helvetica,sans-serif;
+  background:
+    radial-gradient(circle at 18% -5%,rgba(255,153,43,.18),transparent 28%),
+    radial-gradient(circle at 88% 32%,rgba(174,84,30,.08),transparent 24%),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.012) 0 1px,transparent 1px 17px),
+    linear-gradient(180deg,#111514 0%,#060808 44%,#0a0d0c 100%);
+  background-attachment:fixed;
+}
+.fcStandalone{
+  position:relative;
+  max-width:920px;
+  margin:0 auto;
+  padding:18px 14px 26px;
+}
+.fcStandalone:before{
+  content:"";
+  position:absolute;
+  left:6px;right:6px;top:8px;height:8px;
+  border-radius:8px;
+  background:linear-gradient(180deg,#4d2a16,#d28b43 42%,#623218 58%,#1e1009);
+  box-shadow:0 1px 0 #f6bd71,inset 0 -1px 0 #170a05,0 0 10px rgba(208,115,38,.20);
+}
+.fcStandaloneHeader{
+  position:relative;
+  margin:8px 0 14px;
+  padding:22px 18px 17px;
+  border:2px solid #70401f;
+  border-radius:14px;
+  background:
+    radial-gradient(circle at 10px 10px,#cb843c 0 2px,#43220e 2.5px 4px,transparent 4.5px),
+    radial-gradient(circle at calc(100% - 10px) 10px,#cb843c 0 2px,#43220e 2.5px 4px,transparent 4.5px),
+    linear-gradient(135deg,#242927,#0e1110 65%,#17110d);
+  box-shadow:inset 0 0 0 1px #1c0d07,inset 0 -18px 28px rgba(0,0,0,.20),0 14px 30px rgba(0,0,0,.35);
+}
+.fcStandaloneHeader:after{
+  content:"FAMILY OPERATIONS BOARD";
+  position:absolute;
+  left:18px;bottom:7px;
+  font-size:7px;
+  letter-spacing:2px;
+  color:#8c6a45;
+}
+.fcStandaloneTitle{
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:32px;
+  color:#f6dfba;
+  letter-spacing:.2px;
+  text-shadow:0 1px 0 #000,0 0 12px rgba(237,143,49,.22);
+}
+.fcStandaloneSub{color:#c49e72;letter-spacing:1.1px;margin-top:5px;padding-bottom:8px}
+.fcStandaloneHeader .fcBtn{min-width:70px}
+.fcStandalone .fcControls{
+  padding:10px 12px;
+  margin-bottom:9px;
+  border:1px solid #53331d;
+  border-radius:11px;
+  background:linear-gradient(180deg,#171b1a,#0b0e0d);
+  box-shadow:inset 0 1px 0 rgba(255,195,117,.035);
+}
+.fcStandalone .fcRange{
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:14px;
+  color:#e9c99a;
+}
+.fcStandaloneLegend{
+  margin-bottom:11px;
+  padding:8px 11px;
+  border:1px solid #44301f;
+  border-radius:9px;
+  background:#0c100f;
+  color:#b4a28a;
+}
+.fcPhoneDays{gap:11px}
+.fcPhoneDay{
+  position:relative;
+  border:1px solid #594027;
+  border-radius:11px;
+  background:
+    radial-gradient(circle at 8px 8px,#a96c35 0 1.5px,#352012 2px 3.5px,transparent 4px),
+    radial-gradient(circle at calc(100% - 8px) 8px,#a96c35 0 1.5px,#352012 2px 3.5px,transparent 4px),
+    linear-gradient(145deg,#171c1a,#0a0d0c 72%);
+  box-shadow:inset 0 0 0 1px rgba(255,183,95,.025),0 8px 18px rgba(0,0,0,.28);
+}
+.fcPhoneDayHead{
+  padding:11px 13px 10px;
+  border-bottom:1px solid #5a351c;
+  background:linear-gradient(180deg,rgba(61,43,29,.55),rgba(13,16,15,.48));
+  font-family:Georgia,'Times New Roman',serif;
+  color:#ead2ae;
+}
+.fcPhoneDayHead span:last-child{
+  font-family:Arial,Helvetica,sans-serif;
+  font-size:9px;
+  color:#927b61;
+  text-transform:uppercase;
+  letter-spacing:.8px;
+}
+.fcPhoneDay.today{
+  border-color:#d29445;
+  box-shadow:inset 0 0 0 1px rgba(246,188,101,.10),0 0 16px rgba(212,139,54,.13),0 8px 18px rgba(0,0,0,.28);
+}
+.fcPhoneDay.today .fcPhoneDayHead{color:#ffd99c}
+.fcPhoneEvents{padding:9px}
+.fcPhoneEvent{
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:8px;
+  padding:9px 10px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 4px rgba(0,0,0,.34);
+}
+.fcPhoneEvent.shaun{background:linear-gradient(135deg,#083c4d,#0a2028);border-left:4px solid var(--fc-shaun);box-shadow:inset 0 0 15px rgba(37,197,255,.07),0 2px 5px #0008}
+.fcPhoneEvent.mich{background:linear-gradient(135deg,#471832,#26101d);border-left:4px solid var(--fc-mich);box-shadow:inset 0 0 15px rgba(255,79,169,.07),0 2px 5px #0008}
+.fcPhoneEvent.family{background:linear-gradient(135deg,#143b28,#0b2116);border-left:4px solid var(--fc-family);box-shadow:inset 0 0 15px rgba(80,239,139,.07),0 2px 5px #0008}
+.fcPhoneTime{color:#cdbb9f;font-size:10px}
+.fcPhoneTitle{color:#fff3df;font-size:13px}
+.fcPhoneOwner{color:#99846a;letter-spacing:.4px;text-transform:uppercase}
+.fcPhoneEmpty{color:#6f5f4a}
+.fcPhoneStatus{color:#806e58;letter-spacing:.5px}
+
+/* standalone details sit above the page rather than looking like a generic blue modal */
+.fcStandalone .fcDetail{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:30;padding:16px}
+.fcStandalone .fcDetailCard{max-width:420px;width:100%}
+
+@media(max-width:620px){
+  .fcStandalone{padding:15px 9px 22px}
+  .fcStandalone:before{left:4px;right:4px}
+  .fcStandaloneHeader{padding:19px 13px 16px}
+  .fcStandaloneTitle{font-size:27px}
+  .fcStandaloneSub{font-size:10px}
+  .fcStandalone .fcControls{padding:9px}
+  .fcStandalone .fcRange{font-size:13px}
+  .fcStandaloneLegend{font-size:10px}
+  .fcPhoneEvent{grid-template-columns:58px minmax(0,1fr);gap:9px;padding:9px}
+}
