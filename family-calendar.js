@@ -40,7 +40,42 @@ function formatUpdated(iso){if(!iso)return'now';return brisbaneTime(iso)}
 function weekPlacement(ev){var r=eventDayRange(ev),ws=dateKey(currentWeekStart),we=dateKey(addDays(currentWeekStart,7)),s=r.start<ws?ws:r.start,e=r.endExclusive>we?we:r.endExclusive,start=Math.max(0,daysBetween(ws,s)),span=Math.max(1,daysBetween(s,e));return{start:start,span:span,end:start+span}}
 function barTime(ev,p){if(p.span>1){if(ev.all_day)return'ALL DAY • '+p.span+' DAYS';return p.span+' DAYS'}return ev.all_day?'ALL DAY':brisbaneTime(ev.start_at)}
 function assignLanes(events){var items=[],lanes=[],i,j,p,lane;for(i=0;i<events.length;i++){p=weekPlacement(events[i]);items.push({ev:events[i],p:p,lane:0})}items.sort(function(a,b){if(a.p.start!==b.p.start)return a.p.start-b.p.start;return b.p.span-a.p.span});for(i=0;i<items.length;i++){lane=-1;for(j=0;j<lanes.length;j++){if(items[i].p.start>=lanes[j]){lane=j;break}}if(lane<0){lane=lanes.length;lanes.push(items[i].p.end)}else lanes[lane]=items[i].p.end;items[i].lane=lane}return{items:items,laneCount:Math.max(1,lanes.length)}}
-function renderGrid(){var wrap=byId('fcGridWrap'),today=dateKey(brisbaneToday()),owners=['Shaun','Mich','Family'],html='<div class="fcWeekBoard">',d,i,j,key,k,evs,layout,item,idx,hidden;html+='<div class="fcDayHeaderRow"><div class="fcCorner"></div>';for(i=0;i<7;i++){d=addDays(currentWeekStart,i);key=dateKey(d);html+='<div class="fcDayHead'+(key===today?' today':'')+'"><div class="fcDayName">'+dayName(d)+'</div><div class="fcDayNum">'+d.getUTCDate()+'</div></div>'}html+='</div>';for(j=0;j<owners.length;j++){evs=[];for(k=0;k<currentEvents.length;k++)if(currentEvents[k].owner_label===owners[j]){var rr=eventDayRange(currentEvents[k]),ws=dateKey(currentWeekStart),we=dateKey(addDays(currentWeekStart,7));if(rr.start<we&&rr.endExclusive>ws)evs.push(currentEvents[k])}layout=assignLanes(evs);html+='<div class="fcOwnerRow '+ownerClass(owners[j])+(evs.length?'':' empty')+'"><div class="fcPerson '+ownerClass(owners[j])+'">'+owners[j]+'</div><div class="fcOwnerTrack" style="grid-template-rows:repeat('+Math.min(layout.laneCount,4)+',minmax(0,1fr))">';for(i=0;i<7;i++){d=addDays(currentWeekStart,i);key=dateKey(d);html+='<div class="fcDaySlot'+(key===today?' today':'')+'" style="grid-column:'+(i+1)+';grid-row:1 / span '+Math.min(layout.laneCount,4)+'"></div>'}hidden=0;for(i=0;i<layout.items.length;i++){item=layout.items[i];if(item.lane>3){hidden++;continue}idx=currentEvents.indexOf(item.ev);html+='<button class="fcEvent fcEventBar '+ownerClass(owners[j])+(item.p.span>1?' multiday':'')+'" data-fc-index="'+idx+'" style="grid-column:'+(item.p.start+1)+' / span '+item.p.span+';grid-row:'+(item.lane+1)+'"><span class="fcEventTime">'+esc(barTime(item.ev,item.p))+'</span><span class="fcEventTitle">'+esc(item.ev.title)+'</span></button>'}if(hidden)html+='<div class="fcMore fcMoreBar" style="grid-column:1 / span 7;grid-row:4">+'+hidden+' more event'+(hidden===1?'':'s')+'</div>';html+='</div></div>'}html+='</div>';wrap.innerHTML=html;wireEvents(wrap)}
+function renderGrid(){
+var wrap=byId('fcGridWrap'),today=dateKey(brisbaneToday()),html='<div class="fcAgendaBoard">',ws=dateKey(currentWeekStart),we=dateKey(addDays(currentWeekStart,7)),multi=[],i,k,d,key,evs=[],rr,p,idx,maxCards=3;
+for(i=0;i<currentEvents.length;i++){
+  rr=eventDayRange(currentEvents[i]);
+  if(rr.start<we&&rr.endExclusive>ws){p=weekPlacement(currentEvents[i]);if(p.span>1)multi.push({ev:currentEvents[i],p:p})}
+}
+if(multi.length){
+  html+='<div class="fcLongEvents">';
+  for(i=0;i<multi.length&&i<2;i++){
+    idx=currentEvents.indexOf(multi[i].ev);
+    html+='<button class="fcLongEvent '+ownerClass(multi[i].ev.owner_label)+'" data-fc-index="'+idx+'"><span><span class="fcLongOwner">'+esc(multi[i].ev.owner_label)+'</span><span class="fcLongMeta">'+esc(barTime(multi[i].ev,multi[i].p))+'</span></span><span class="fcLongTitle">'+esc(multi[i].ev.title)+'</span><span class="fcLongArrow">›</span></button>';
+  }
+  if(multi.length>2)html+='<div class="fcAgendaMore">+'+(multi.length-2)+'<br>more</div>';
+  html+='</div>';
+}
+html+='<div class="fcAgendaDays">';
+for(i=0;i<7;i++){
+  d=addDays(currentWeekStart,i);key=dateKey(d);evs=[];
+  for(k=0;k<currentEvents.length;k++){
+    rr=eventDayRange(currentEvents[k]);p=weekPlacement(currentEvents[k]);
+    if(p.span===1&&occursOn(currentEvents[k],key))evs.push(currentEvents[k]);
+  }
+  evs.sort(function(a,b){if(a.all_day&&!b.all_day)return-1;if(!a.all_day&&b.all_day)return 1;return String(a.start_at||'').localeCompare(String(b.start_at||''))});
+  html+='<section class="fcAgendaDay"><div class="fcAgendaDate'+(key===today?' today':'')+'"><span class="fcAgendaDayName">'+dayName(d)+'</span><span class="fcAgendaDayNum">'+d.getUTCDate()+'</span></div><div class="fcAgendaEvents">';
+  if(!evs.length){html+='<div class="fcAgendaClear">Nothing scheduled</div>'}
+  else{
+    for(k=0;k<evs.length&&k<maxCards;k++){
+      idx=currentEvents.indexOf(evs[k]);
+      html+='<button class="fcAgendaEvent '+ownerClass(evs[k].owner_label)+'" data-fc-index="'+idx+'"><span class="fcAgendaTime">'+esc(timeLabel(evs[k],key))+'</span><span class="fcAgendaOwner">'+esc(evs[k].owner_label)+'</span><span class="fcAgendaTitle">'+esc(evs[k].title)+'</span></button>';
+    }
+    if(evs.length>maxCards)html+='<div class="fcAgendaMore">+'+(evs.length-maxCards)+'<br>more</div>';
+  }
+  html+='</div></section>';
+}
+html+='</div></div>';wrap.innerHTML=html;wireEvents(wrap)
+}
 function eventButtonHtml(ev,key,cls){var idx=currentEvents.indexOf(ev);return'<button class="'+cls+' '+ownerClass(ev.owner_label)+'" data-fc-index="'+idx+'"><span class="fcEventTime">'+esc(timeLabel(ev,key))+'</span><span class="fcEventTitle">'+esc(ev.title)+'</span></button>'}
 function wireEvents(root){var buttons=root.querySelectorAll('[data-fc-index]'),i;for(i=0;i<buttons.length;i++)buttons[i].onclick=function(){var idx=parseInt(this.getAttribute('data-fc-index'),10);if(!isNaN(idx)&&currentEvents[idx])openDetail(currentEvents[idx])}}
 function openDetail(ev){var d=byId('fcDetail');if(!d)return;byId('fcDetailOwner').innerHTML=esc(ev.owner_label||'Family');byId('fcDetailTitle').innerHTML=esc(ev.title);byId('fcDetailWhen').innerHTML=esc(eventWhen(ev));byId('fcDetailWhere').innerHTML=ev.location?esc(ev.location):'';d.className='fcDetail open'}
