@@ -1,0 +1,132 @@
+name: Verify Mich shift colours
+on:
+  push:
+    branches: [calendar-mich-shift-colours]
+    paths: ['.github/workflows/calendar-mich-shift-colours.yml']
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply calendar-only colour rules
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          js_path = Path('family-calendar-foundry4.js')
+          css_path = Path('family-calendar-foundry4.css')
+          js = js_path.read_text()
+          helper = '''  function rosterClass(ev) {
+            // Exact roster titles only: do not recolour ordinary appointments.
+            if (ev.owner_label !== 'Mich') return '';
+            var t = String(ev.title || '').replace(/\\./g, '').replace(/^\\s+|\\s+$/g, '').replace(/\\s+/g, ' ').toUpperCase();
+            if (/^(AM|AM SHIFT|DAY|DAY SHIFT|DAY DUTY)$/.test(t)) return ' fc4-shift-day';
+            if (/^(PM|PM SHIFT|AFTERNOON|AFTERNOON SHIFT)$/.test(t)) return ' fc4-shift-pm';
+            if (/^(ND|ND SHIFT|NIGHT|NIGHT SHIFT|NIGHT DUTY)$/.test(t)) return ' fc4-shift-nd';
+            return '';
+          }
+          '''
+          marker = '  function pin()'
+          assert 'function rosterClass(' not in js, 'Already patched; do not apply twice'
+          assert js.count(marker) == 1
+          js = js.replace(marker, helper + marker, 1)
+          needle = "owner(ev) + (longEvent ? ' fc4-long' : '')"
+          assert js.count(needle) == 1, 'Expected shared event card renderer'
+          js = js.replace(needle, "owner(ev) + rosterClass(ev) + (longEvent ? ' fc4-long' : '')", 1)
+          js_path.write_text(js)
+          Path('/tmp/mich-shift-classifier.js').write_text(helper + '\nmodule.exports = rosterClass;\n')
+          css = css_path.read_text()
+          assert '.fc4-event.mich.fc4-shift-day' not in css
+          css += '''
+          /* Mich roster cards only. Preserve ordinary pink appointments and all artwork. */
+          .fc4-event.mich.fc4-shift-day{border-color:#3e805c;border-left-color:#4de897;background:linear-gradient(115deg,#205a3c,#102e24);box-shadow:inset 0 1px 0 rgba(153,255,199,.12),0 2px 5px rgba(0,0,0,.4)}
+          .fc4-event.mich.fc4-shift-pm{border-color:#3766a0;border-left-color:#58a6ff;background:linear-gradient(115deg,#204b83,#132846);box-shadow:inset 0 1px 0 rgba(153,202,255,.12),0 2px 5px rgba(0,0,0,.4)}
+          .fc4-event.mich.fc4-shift-nd{border-color:#765397;border-left-color:#c18aff;background:linear-gradient(115deg,#533073,#2b1b43);box-shadow:inset 0 1px 0 rgba(218,184,255,.12),0 2px 5px rgba(0,0,0,.4)}
+          '''
+          css_path.write_text(css)
+          for filename in ['index.html', 'calendar.html']:
+              p = Path(filename)
+              original = p.read_text()
+              updated, count = re.subn(r'(family-calendar-foundry4\.(?:js|css)\?v=)[^"\s>]+', r'\g<1>foundry4-shifts1', original)
+              assert count == 2, 'Expected exactly two calendar asset references in ' + filename
+              p.write_text(updated)
+          PY
+          node --check family-calendar-foundry4.js
+          node <<'JS'
+          const assert = require('node:assert/strict');
+          const classify = require('/tmp/mich-shift-classifier.js');
+          const groups = {day:['AM',' am ','A.M.','Day shift','DAY','Day duty'],pm:['PM','pm shift','Afternoon shift',' P.M. '],nd:['ND',' nd ','Night shift','Night duty']};
+          let checks = 0;
+          for (const [group, titles] of Object.entries(groups)) for (const title of titles) {
+            assert.equal(classify({owner_label:'Mich',title}), ' fc4-shift-'+group);
+            assert.equal(classify({owner_label:'Shaun',title}), '');
+            assert.equal(classify({owner_label:'Family',title}), '');
+            checks += 3;
+          }
+          for (const title of ['Dentist',"Gid's excursion",'Family day','AM dentist','PM appointment','ND training','Annual Leave','',null]) {assert.equal(classify({owner_label:'Mich',title}),'');checks++;}
+          console.log(checks + ' roster classification checks passed');
+          JS
+      - name: Install browser test tools
+        run: |
+          python -m pip install --quiet playwright==1.55.0
+          python -m playwright install --with-deps chromium > /tmp/shift-browser-install.log 2>&1
+      - name: Verify fridge, phone and popup card colours
+        run: |
+          python - <<'PY'
+          import json, subprocess, time
+          from playwright.sync_api import sync_playwright
+          server = subprocess.Popen(['python','-m','http.server','8765','--bind','127.0.0.1'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+          time.sleep(1)
+          events = [dict(owner_label=o,title=t,all_day=True,all_day_start=d,all_day_end=e) for o,t,d,e in [
+            ('Mich','AM','2026-09-07','2026-09-08'),('Mich','PM','2026-09-08','2026-09-09'),('Mich','ND','2026-09-09','2026-09-10'),('Mich','Dentist','2026-09-10','2026-09-11'),('Shaun','AM','2026-09-11','2026-09-12'),('Family','ND','2026-09-12','2026-09-13'),('Mich','Night shift','2026-09-12','2026-09-14')]]
+          errors = []
+          def intercept(route):
+              if route.request.url.startswith('http://127.0.0.1:'):
+                  route.continue_()
+              elif '/functions/v1/family-calendar' in route.request.url:
+                  route.fulfill(status=200,json={'events':events,'synced_at':'2026-09-11T12:00:00Z'})
+              else:
+                  route.fulfill(status=200,json=[])
+          frozen = "var D=Date;window.Date=class extends D{constructor(...a){super(...(a.length?a:['2026-09-11T12:00:00Z']))}static now(){return new D('2026-09-11T12:00:00Z').getTime()}};localStorage.setItem('family-calendar-pin','012345');"
+          expected = [('Mich','AM','rgb(77, 232, 151)'),('Mich','PM','rgb(88, 166, 255)'),('Mich','ND','rgb(193, 138, 255)'),('Mich','Night shift','rgb(193, 138, 255)'),('Mich','Dentist','rgb(255, 79, 174)'),('Shaun','AM','rgb(35, 201, 255)'),('Family','ND','rgb(60, 231, 155)')]
+          with sync_playwright() as p:
+              browser = p.chromium.launch()
+              for filename,width,height in [('index.html',536,848),('calendar.html',390,844)]:
+                  context = browser.new_context(viewport={'width':width,'height':height},timezone_id='Australia/Brisbane')
+                  context.route('**/*',intercept)
+                  context.add_init_script(frozen)
+                  page = context.new_page();page.on('pageerror',lambda e:errors.append(str(e)))
+                  page.goto('http://127.0.0.1:8765/'+filename)
+                  if filename=='index.html':page.locator('#familyCalendarLaunch').click()
+                  page.wait_for_selector('.fc4-day')
+                  cards = page.locator('#fc4Content .fc4-event').evaluate_all("els=>els.map(e=>({owner:e.querySelector('.fc4-owner').textContent,title:e.querySelector('.fc4-eventTitle').textContent,border:getComputedStyle(e).borderLeftColor}))")
+                  for owner,title,colour in expected:
+                      found = [c for c in cards if c['owner']==owner and c['title']==title]
+                      assert len(found)==1 and found[0]['border']==colour, (filename,owner,title,found)
+                  assert page.locator('.fc4-day').count()==7
+                  page.locator('.fc4-dayDate[data-day="2"]').click()
+                  assert page.locator('.fc4-dialogList .fc4-event.mich.fc4-shift-nd').count()==1
+                  assert page.locator('.fc4-dialogList .fc4-event').evaluate('(e)=>getComputedStyle(e).borderLeftColor')=='rgb(193, 138, 255)'
+                  page.locator('.fc4-dialogClose').click()
+                  page.locator('#fc4Next').click();page.wait_for_timeout(150)
+                  assert '14 Sep' in page.locator('#fc4Range').inner_text()
+                  assert page.evaluate('document.documentElement.scrollWidth')<=width
+                  print(filename+': AM green, PM blue, ND purple; appointments and other owners unchanged; day popups and navigation passed')
+                  context.close()
+              browser.close()
+          server.terminate()
+          assert not errors, errors
+          print('Browser errors:',errors)
+          PY
+      - name: Commit only tested calendar files
+        run: |
+          git diff --exit-code -- fridge.css dinner-vote.js dinner-vote.css assets
+          git add family-calendar-foundry4.js family-calendar-foundry4.css index.html calendar.html
+          git diff --cached --stat
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Colour Mich AM shifts green, PM blue and ND purple on fridge and phone'
+          git push origin HEAD:calendar-mich-shift-colours
