@@ -7,6 +7,7 @@ on:
       - '.github/workflows/install-family-calendar.yml'
       - 'family-calendar.js'
       - 'family-calendar.css'
+      - 'family-calendar-industrial.css'
       - 'calendar.html'
 
 permissions:
@@ -27,11 +28,16 @@ jobs:
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
           css = '<link rel="stylesheet" href="family-calendar.css?v=20260911-cal1">'
+          industrial = '<link rel="stylesheet" href="family-calendar-industrial.css?v=20260911-steam1">'
           js = '<script src="family-calendar.js?v=20260911-cal1"></script>'
           if 'family-calendar.css' not in s:
               s = s.replace('</head>', css + '\n</head>')
           else:
               s = re.sub(r'<link rel="stylesheet" href="family-calendar\.css\?v=[^"]+">', css, s)
+          if 'family-calendar-industrial.css' not in s:
+              s = s.replace(css, css + '\n' + industrial)
+          else:
+              s = re.sub(r'<link rel="stylesheet" href="family-calendar-industrial\.css\?v=[^"]+">', industrial, s)
           if 'family-calendar.js' not in s:
               s = s.replace('</body>', js + '\n</body>')
           else:
@@ -47,5 +53,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Enable Family Calendar on Family Hub"
+          git commit -m "Apply industrial Family Calendar skin on fridge"
           git push
