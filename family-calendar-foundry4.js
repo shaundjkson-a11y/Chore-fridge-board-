@@ -20,6 +20,15 @@
   function dayName(d) { return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.getUTCDay()]; }
   function time(iso) { var d = shift(iso), h = d.getUTCHours(); return (h % 12 || 12) + ':' + pad(d.getUTCMinutes()) + (h >= 12 ? ' pm' : ' am'); }
   function owner(ev) { return ev.owner_label === 'Mich' ? 'mich' : ev.owner_label === 'Family' ? 'family' : 'shaun'; }
+  function rosterClass(ev) {
+  // Exact roster titles only: do not recolour ordinary appointments.
+  if (ev.owner_label !== 'Mich') return '';
+  var t = String(ev.title || '').replace(/\./g, '').replace(/^\s+|\s+$/g, '').replace(/\s+/g, ' ').toUpperCase();
+  if (/^(AM|AM SHIFT|DAY|DAY SHIFT|DAY DUTY)$/.test(t)) return ' fc4-shift-day';
+  if (/^(PM|PM SHIFT|AFTERNOON|AFTERNOON SHIFT)$/.test(t)) return ' fc4-shift-pm';
+  if (/^(ND|ND SHIFT|NIGHT|NIGHT SHIFT|NIGHT DUTY)$/.test(t)) return ' fc4-shift-nd';
+  return '';
+}
   function pin() { try { return localStorage.getItem(PIN_KEY) || ''; } catch (e) { return ''; } }
   function savePin(p) { try { if (p) localStorage.setItem(PIN_KEY, p); else localStorage.removeItem(PIN_KEY); } catch (e) {} }
   function setStatus(text) { if (status) status.textContent = text; }
@@ -57,7 +66,7 @@
   function inWeek() { var result = [], i; for (i = 0; i < events.length; i++) if (overlaps(events[i], key(week), key(plus(week, 7)))) result.push(events[i]); return result.sort(sortEvents); }
   function eventButton(ev, longEvent) {
     var idx = events.indexOf(ev);
-    return '<button type="button" class="fc4-event ' + owner(ev) + (longEvent ? ' fc4-long' : '') + '" data-event="' + idx + '" title="' + esc(ev.title) + '">' +
+    return '<button type="button" class="fc4-event ' + owner(ev) + rosterClass(ev) + (longEvent ? ' fc4-long' : '') + '" data-event="' + idx + '" title="' + esc(ev.title) + '">' +
       '<span class="fc4-eventTop"><span class="fc4-time">' + esc(longEvent ? when(ev) : ev.all_day ? 'ALL DAY' : time(ev.start_at)) + '</span>' +
       '<span class="fc4-owner">' + esc(ev.owner_label || 'Family') + '</span></span>' +
       '<span class="fc4-eventTitle">' + esc(ev.title || 'Untitled event') + '</span><span class="fc4-chevron" aria-hidden="true">›</span></button>';
