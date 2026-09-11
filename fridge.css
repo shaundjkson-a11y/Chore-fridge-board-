@@ -43,3 +43,11 @@ body{padding:0}
 .roleIcon{display:flex;align-items:center;justify-content:center}.roleIcon svg,.taskIcon svg,.basic svg{display:block;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;filter:none;overflow:visible;flex-shrink:0}.roleIcon svg{width:36px;height:36px;stroke-width:1.9}.taskIcon{width:30px;height:30px;display:flex;align-items:center;justify-content:center}.taskIcon svg{width:28px;height:28px}.indie .roleIcon,.indie .taskIcon{color:#ff42ba}.lola .roleIcon,.lola .taskIcon{color:#00caff}.gideon .roleIcon,.gideon .taskIcon{color:#35ed83}.roleIcon svg,.taskIcon svg{stroke:currentColor!important}.sunIcon{display:inline-block;width:32px;height:32px;vertical-align:-7px!important}.sunIcon svg{display:block;width:32px;height:32px;fill:none;stroke:#ffd43b;stroke-width:1.9;stroke-linecap:round}
 
 .gear{display:flex;align-items:center;justify-content:center;padding:7px}.gear svg{display:block;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round}
+
+
+/* Six-task role support */
+.tasks.six{grid-template-rows:repeat(6,1fr);gap:3px}
+.tasks.six .task{padding-top:3px;padding-bottom:3px}
+.tasks.six .taskIcon{height:27px}
+.tasks.six .taskIcon svg{width:25px;height:25px}
+.tasks.six .label{font-size:8.5px}
