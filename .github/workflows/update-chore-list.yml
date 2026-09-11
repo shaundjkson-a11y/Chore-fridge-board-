@@ -1,0 +1,64 @@
+name: Update Chore List
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/update-chore-list.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Update chore tasks only
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          old = '{name:"Dogs & Outside",tasks:[["Pick up dog poo","poo"],["Clean & refill dog water","bowl"],["Feed the dogs","bone"],["Pool robot + clean filter","robot"],["Quick outdoor tidy","leaf"]]}'
+          new = '{name:"Dogs & Outside",tasks:[["Pick up dog poo","poo"],["Clean & refill dog water","bowl"],["Feed the dogs","bone"],["Pool robot + clean filter","robot"],["Quick outdoor tidy","leaf"],["Water the garden","leaf"]]}'
+          if old not in s:
+              raise SystemExit('Dogs & Outside task list not found')
+          s = s.replace(old, new, 1)
+
+          old = '["Collect laundry & towels","shirt"]'
+          new = '["Clean bathroom","spray"]'
+          if old not in s:
+              raise SystemExit('House laundry task not found')
+          s = s.replace(old, new, 1)
+
+          old = 'tasksEl=document.getElementById("tasks"+i);tasksEl.innerHTML="";'
+          new = 'tasksEl=document.getElementById("tasks"+i);tasksEl.className=r.tasks.length>5?"tasks six":"tasks";tasksEl.innerHTML="";'
+          if old not in s:
+              raise SystemExit('Task render hook not found')
+          s = s.replace(old, new, 1)
+
+          p.write_text(s, encoding='utf-8')
+
+          css = Path('fridge.css')
+          c = css.read_text(encoding='utf-8')
+          marker = '/* Six-task role support */'
+          if marker not in c:
+              c += '\n\n' + marker + '\n.tasks.six{grid-template-rows:repeat(6,1fr);gap:3px}\n.tasks.six .task{padding-top:3px;padding-bottom:3px}\n.tasks.six .taskIcon{height:27px}\n.tasks.six .taskIcon svg{width:25px;height:25px}\n.tasks.six .label{font-size:8.5px}\n'
+              css.write_text(c, encoding='utf-8')
+          PY
+      - name: Commit chore updates
+        run: |
+          if git diff --quiet -- index.html fridge.css; then
+            echo "Chore updates already applied"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html fridge.css
+          git commit -m "Update house and outside chores"
+          git push
