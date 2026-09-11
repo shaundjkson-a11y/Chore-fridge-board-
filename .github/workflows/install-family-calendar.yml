@@ -9,7 +9,7 @@ on:
       - 'family-calendar.css'
       - 'family-calendar-industrial.css'
       - 'family-calendar-industrial-v2.css'
-      - 'assets/family-calendar-industrial-bg.svg'
+      - 'family-calendar-industrial-v3.css'
       - 'calendar.html'
 
 permissions:
@@ -22,43 +22,81 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Wire Family Calendar into fridge board
+
+      - name: Apply premium Family Calendar v3
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
-          p = Path('index.html')
-          s = p.read_text(encoding='utf-8')
-          css = '<link rel="stylesheet" href="family-calendar.css?v=20260911-cal2">'
-          industrial = '<link rel="stylesheet" href="family-calendar-industrial.css?v=20260911-steam1">'
-          industrial2 = '<link rel="stylesheet" href="family-calendar-industrial-v2.css?v=20260911-steam2">'
-          js = '<script src="family-calendar.js?v=20260911-cal2"></script>'
-          if 'family-calendar.css' not in s:
-              s = s.replace('</head>', css + '\n</head>')
-          else:
-              s = re.sub(r'<link rel="stylesheet" href="family-calendar\.css\?v=[^"]+">', css, s)
-          if 'family-calendar-industrial.css' not in s:
-              s = s.replace(css, css + '\n' + industrial)
-          else:
-              s = re.sub(r'<link rel="stylesheet" href="family-calendar-industrial\.css\?v=[^"]+">', industrial, s)
-          if 'family-calendar-industrial-v2.css' not in s:
-              s = s.replace(industrial, industrial + '\n' + industrial2)
-          else:
-              s = re.sub(r'<link rel="stylesheet" href="family-calendar-industrial-v2\.css\?v=[^"]+">', industrial2, s)
-          if 'family-calendar.js' not in s:
-              s = s.replace('</body>', js + '\n</body>')
-          else:
-              s = re.sub(r'<script src="family-calendar\.js\?v=[^"]+"></script>', js, s)
-          p.write_text(s, encoding='utf-8')
+
+          # Replace only the fridge week renderer. Phone agenda and calendar data logic stay unchanged.
+          js_path = Path('family-calendar.js')
+          s = js_path.read_text(encoding='utf-8')
+          new_render = r'''function renderGrid(){
+          var wrap=byId('fcGridWrap'),today=dateKey(brisbaneToday()),html='<div class="fcAgendaBoard">',ws=dateKey(currentWeekStart),we=dateKey(addDays(currentWeekStart,7)),multi=[],i,k,d,key,evs=[],rr,p,idx,maxCards=3;
+          for(i=0;i<currentEvents.length;i++){
+            rr=eventDayRange(currentEvents[i]);
+            if(rr.start<we&&rr.endExclusive>ws){p=weekPlacement(currentEvents[i]);if(p.span>1)multi.push({ev:currentEvents[i],p:p})}
+          }
+          if(multi.length){
+            html+='<div class="fcLongEvents">';
+            for(i=0;i<multi.length&&i<2;i++){
+              idx=currentEvents.indexOf(multi[i].ev);
+              html+='<button class="fcLongEvent '+ownerClass(multi[i].ev.owner_label)+'" data-fc-index="'+idx+'"><span><span class="fcLongOwner">'+esc(multi[i].ev.owner_label)+'</span><span class="fcLongMeta">'+esc(barTime(multi[i].ev,multi[i].p))+'</span></span><span class="fcLongTitle">'+esc(multi[i].ev.title)+'</span><span class="fcLongArrow">›</span></button>';
+            }
+            if(multi.length>2)html+='<div class="fcAgendaMore">+'+(multi.length-2)+'<br>more</div>';
+            html+='</div>';
+          }
+          html+='<div class="fcAgendaDays">';
+          for(i=0;i<7;i++){
+            d=addDays(currentWeekStart,i);key=dateKey(d);evs=[];
+            for(k=0;k<currentEvents.length;k++){
+              rr=eventDayRange(currentEvents[k]);p=weekPlacement(currentEvents[k]);
+              if(p.span===1&&occursOn(currentEvents[k],key))evs.push(currentEvents[k]);
+            }
+            evs.sort(function(a,b){if(a.all_day&&!b.all_day)return-1;if(!a.all_day&&b.all_day)return 1;return String(a.start_at||'').localeCompare(String(b.start_at||''))});
+            html+='<section class="fcAgendaDay"><div class="fcAgendaDate'+(key===today?' today':'')+'"><span class="fcAgendaDayName">'+dayName(d)+'</span><span class="fcAgendaDayNum">'+d.getUTCDate()+'</span></div><div class="fcAgendaEvents">';
+            if(!evs.length){html+='<div class="fcAgendaClear">Nothing scheduled</div>'}
+            else{
+              for(k=0;k<evs.length&&k<maxCards;k++){
+                idx=currentEvents.indexOf(evs[k]);
+                html+='<button class="fcAgendaEvent '+ownerClass(evs[k].owner_label)+'" data-fc-index="'+idx+'"><span class="fcAgendaTime">'+esc(timeLabel(evs[k],key))+'</span><span class="fcAgendaOwner">'+esc(evs[k].owner_label)+'</span><span class="fcAgendaTitle">'+esc(evs[k].title)+'</span></button>';
+              }
+              if(evs.length>maxCards)html+='<div class="fcAgendaMore">+'+(evs.length-maxCards)+'<br>more</div>';
+            }
+            html+='</div></section>';
+          }
+          html+='</div></div>';wrap.innerHTML=html;wireEvents(wrap)
+          }'''
+
+          if 'fcAgendaBoard' not in s:
+              pat = re.compile(r'function renderGrid\(\)\{.*?\}\nfunction eventButtonHtml', re.S)
+              s, n = pat.subn(lambda m: new_render + '\nfunction eventButtonHtml', s, count=1)
+              if n != 1:
+                  raise SystemExit('Could not locate renderGrid for v3 replacement')
+              js_path.write_text(s, encoding='utf-8')
+
+          # Wire v3 CSS after the existing calendar skins. Chore board files are untouched.
+          v3 = '<link rel="stylesheet" href="family-calendar-industrial-v3.css?v=20260911-steam3">'
+          for name in ('index.html','calendar.html'):
+              p=Path(name)
+              h=p.read_text(encoding='utf-8')
+              if 'family-calendar-industrial-v3.css' not in h:
+                  h=h.replace('</head>',v3+'\n</head>')
+              else:
+                  h=re.sub(r'<link rel="stylesheet" href="family-calendar-industrial-v3\.css\?v=[^"]+">',v3,h)
+              h=re.sub(r'<script src="family-calendar\.js\?v=[^"]+"></script>','<script src="family-calendar.js?v=20260911-agenda3"></script>',h)
+              p.write_text(h,encoding='utf-8')
           PY
-      - name: Commit Family Calendar wiring
+
+      - name: Commit Family Calendar v3
         run: |
-          if git diff --quiet -- index.html; then
-            echo "Family Calendar already wired"
+          if git diff --quiet -- family-calendar.js index.html calendar.html; then
+            echo "Family Calendar v3 already applied"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          git commit -m "Apply Family Calendar industrial v2"
+          git add family-calendar.js index.html calendar.html
+          git commit -m "Rebuild Family Calendar as industrial agenda"
           git push
