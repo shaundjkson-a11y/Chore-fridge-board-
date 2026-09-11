@@ -1,0 +1,292 @@
+name: Verify Family Calendar month view
+on:
+  push:
+    branches: [calendar-month-view]
+    paths: ['.github/workflows/calendar-month-view.yml']
+permissions:
+  contents: write
+jobs:
+  month:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply month view to calendar only
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import os, re, shutil
+          baseline = Path(os.environ['RUNNER_TEMP']) / 'month-baseline'
+          shutil.copytree('.', baseline, ignore=shutil.ignore_patterns('.git'), dirs_exist_ok=True)
+          p=Path('family-calendar-foundry4.js')
+          s=p.read_text()
+          assert 'function rosterClass(ev)' in s
+          assert 'MONTHLY PLANNER' not in s, 'Month release already applied'
+          s=s.replace('var week, events', 'var month, events').replace('loadedWeek', 'loadedMonth').replace('targetWeek', 'targetMonth')
+          start=s.index('  function inWeek()')
+          end=s.index('  function eventButton(', start)
+          s=s[:start]+r'''  function firstMonth(d, offset) { return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + (offset || 0), 1)); }
+            function monthLabel(d) { return ['January','February','March','April','May','June','July','August','September','October','November','December'][d.getUTCMonth()] + ' ' + d.getUTCFullYear(); }
+            function monthBounds(d) {
+              var start = monday(firstMonth(d)), next = firstMonth(d, 1);
+              var rows = Math.ceil((next.getTime() - start.getTime()) / (7 * 86400000));
+              return { start: start, end: plus(start, rows * 7), rows: rows };
+            }
+            function inMonth() {
+              var list = [], i;
+              for (i = 0; i < events.length; i++) if (overlaps(events[i], key(month), key(firstMonth(month, 1)))) list.push(events[i]);
+              return list.sort(sortEvents);
+            }
+            function monthPill(ev, extraClass, style) {
+              return '<button type="button" class="fc4-event fc4-monthPill ' + owner(ev) + rosterClass(ev) + (extraClass ? ' ' + extraClass : '') + '" data-event="' + events.indexOf(ev) + '"' + (style ? ' style="' + style + '"' : '') + ' title="' + esc((ev.owner_label || 'Family') + ': ' + (ev.title || 'Untitled event') + ' | ' + when(ev)) + '"><span>' + esc(ev.title || 'Untitled event') + '</span></button>';
+            }
+          '''+s[end:]
+          start=s.index('  function render() {')
+          end=s.index('  function showPin(', start)
+          s=s[:start]+r'''  function render() {
+              var bounds = monthBounds(month), all = events.slice().sort(sortEvents), now = key(today());
+              var html = '<div class="fc4-monthBoard rows-' + bounds.rows + '"><div class="fc4-monthWeekdays">';
+              var i, j, w, d, dk, from, to, ev, r, spans, chosen, occupied, a, z, list, hidden, maxShown, style;
+              for (i = 0; i < 7; i++) html += '<span>' + ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i] + '</span>';
+              html += '</div><div class="fc4-monthWeeks">';
+              for (w = 0; w < bounds.rows; w++) {
+                from = plus(bounds.start, w * 7); to = plus(from, 7); spans = []; chosen = []; occupied = -1;
+                for (i = 0; i < all.length; i++) {
+                  ev = all[i];
+                  if (multi(ev) && overlaps(ev, key(from), key(to))) {
+                    r = range(ev);
+                    a = Math.max(0, Math.round((fromKey(r.start) - from) / 86400000));
+                    z = Math.min(7, Math.round((fromKey(r.end) - from) / 86400000));
+                    spans.push({ ev: ev, start: a, end: z, before: r.start < key(from), after: r.end > key(to) });
+                  }
+                }
+                spans.sort(function(a,b) { return a.start - b.start || b.end - a.end; });
+                // One compact spanning lane. Additional overlaps remain in each day's popup.
+                for (i = 0; i < spans.length; i++) if (spans[i].start >= occupied) { chosen.push(spans[i]); occupied = spans[i].end; }
+                html += '<div class="fc4-monthWeek"><div class="fc4-monthCells">';
+                for (j = 0; j < 7; j++) {
+                  d = plus(from, j); dk = key(d); list = []; hidden = 0;
+                  for (i = 0; i < all.length; i++) if (overlaps(all[i], dk, key(plus(d,1)))) {
+                    var alreadyShown = false, c;
+                    for (c = 0; c < chosen.length; c++) if (chosen[c].ev === all[i]) alreadyShown = true;
+                    if (!alreadyShown) list.push(all[i]);
+                  }
+                  maxShown = chosen.length ? 1 : 2;
+                  html += '<section class="fc4-monthCell' + (d.getUTCMonth() !== month.getUTCMonth() ? ' is-other' : '') + (dk === now ? ' is-today' : '') + '" data-date="' + dk + '">';
+                  html += '<button type="button" class="fc4-monthDate" data-month-day="' + dk + '" aria-label="View ' + dayName(d) + ' ' + dateLabel(d) + ' ' + d.getUTCFullYear() + '"' + (dk === now ? ' aria-current="date"' : '') + '><b>' + d.getUTCDate() + '</b>' + (d.getUTCDate() === 1 ? '<small>' + dateLabel(d).split(' ')[1] + '</small>' : '') + '</button>';
+                  html += '<div class="fc4-monthDayEvents"' + (chosen.length ? ' style="padding-top:18px"' : '') + '>';
+                  for (i = 0; i < list.length && i < maxShown; i++) html += monthPill(list[i], '', '');
+                  hidden = Math.max(0, list.length - maxShown);
+                  if (hidden) html += '<button type="button" class="fc4-monthMore" data-month-day="' + dk + '" aria-label="View all events for ' + dateLabel(d) + '">+' + hidden + ' more</button>';
+                  html += '</div></section>';
+                }
+                html += '</div>';
+                if (chosen.length) {
+                  html += '<div class="fc4-monthLongLayer">';
+                  for (i = 0; i < chosen.length; i++) {
+                    a = chosen[i];
+                    style = 'left:calc(' + (a.start * 100 / 7).toFixed(5) + '% + 3px);width:calc(' + ((a.end - a.start) * 100 / 7).toFixed(5) + '% - 6px)';
+                    html += monthPill(a.ev, 'fc4-monthLong' + (a.before ? ' continues-before' : '') + (a.after ? ' continues-after' : ''), style);
+                  }
+                  html += '</div>';
+                }
+                html += '</div>';
+              }
+              html += '</div><div class="fc4-monthHint">Tap a date for all events. Tap a card for details.</div></div>';
+              content.innerHTML = html; wireEvents(content);
+              var days = content.querySelectorAll('[data-month-day]');
+              for (i = 0; i < days.length; i++) days[i].onclick = function() {
+                var day = fromKey(this.getAttribute('data-month-day')), list = [], j;
+                for (j = 0; j < all.length; j++) if (overlaps(all[j], key(day), key(plus(day,1)))) list.push(all[j]);
+                if (list.length) showEventList(dayName(day) + ' ' + dateLabel(day), list);
+                else showDialog(dayName(day) + ' ' + dateLabel(day), '<p class="fc4-dialogWhen">No synced events for this date.</p>');
+              };
+              var count = inMonth().length;
+              byId('fc4Total').textContent = count + (count === 1 ? ' event this month' : ' events this month');
+            }
+          '''+s[end:]
+          s=s.replace("byId('fc4Range').textContent = dateLabel(week) + ' to ' + dateLabel(plus(week,6)) + ' ' + plus(week,6).getUTCFullYear();", "byId('fc4Range').textContent = monthLabel(month);")
+          s=s.replace('targetMonth = key(week), p = pin()', 'targetMonth = key(month), bounds = monthBounds(month), p = pin()')
+          s=s.replace("if (!silent) setStatus('Loading family calendar…');", "if (!silent) setStatus('Loading family calendar…');\n    if (loadedMonth !== targetMonth) { content.innerHTML = '<div class=\"fc4-lockWrap\">Loading month…</div>'; byId('fc4Total').textContent = ''; }")
+          s=s.replace("encodeURIComponent(targetMonth) + '&to=' + encodeURIComponent(key(plus(week,7)))", "encodeURIComponent(key(bounds.start)) + '&to=' + encodeURIComponent(key(bounds.end))")
+          s=s.replace('week = n === 0 ? monday(today()) : plus(week, n)', 'month = n === 0 ? firstMonth(today()) : firstMonth(month, n)')
+          s=s.replace('week = monday(today())', 'month = firstMonth(today())')
+          s=s.replace('navigate(-7)', 'navigate(-1)').replace('navigate(7)', 'navigate(1)')
+          s=s.replace('THE FAMILY / WEEKLY PLANNER', 'THE FAMILY / MONTHLY PLANNER')
+          s=s.replace('Calendar week', 'Calendar month').replace('Previous week', 'Previous month').replace('Next week', 'Next month')
+          s=s.replace('class="fc4-content"', 'class="fc4-content fc4-monthContent"')
+          s=s.replace('FOUNDRY 4</span>', 'FOUNDRY 4 · MONTH</span>')
+          assert not re.search(r'\bweek\b', s), 'Unexpected old week state remaining'
+          assert "encodeURIComponent(key(bounds.end))" in s
+          p.write_text(s)
+          css=r'''
+          /* Full month view. Only calendar content changes; artwork and shift colours are retained. */
+          .fc4-monthBoard{height:100%;min-height:0;display:flex;flex-direction:column}
+          .fc4-monthWeekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));flex:0 0 23px;align-items:center;margin-bottom:4px;border-bottom:1px solid #655035;color:#d9ba8d;font-size:8px;letter-spacing:1px;text-transform:uppercase;text-align:center}
+          .fc4-monthWeeks{flex:1;min-height:0;display:flex;flex-direction:column;gap:5px}
+          .fc4-monthWeek{position:relative;flex:1 1 0;min-height:0}
+          .fc4-monthCells{height:100%;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+          .fc4-monthCell{min-width:0;min-height:0;display:flex;flex-direction:column;padding:3px;border:1px solid #4c4940;border-radius:7px;background:linear-gradient(145deg,#20272c,#121b22);overflow:hidden}
+          .fc4-monthCell.is-other{background:#10161c;border-color:#30383d}
+          .fc4-monthCell.is-other .fc4-monthDate{color:#8a9499}
+          .fc4-monthCell.is-today{border-color:#e2a354;background:linear-gradient(145deg,#493924,#1c2226);box-shadow:inset 0 0 0 1px rgba(239,191,119,.22),0 0 8px rgba(217,152,40,.13)}
+          .fc4-monthDate{border:0;background:transparent;color:#f4dbb3;display:flex;align-items:center;justify-content:space-between;width:100%;height:18px;min-height:18px;padding:0 2px;text-align:left}
+          .fc4-monthDate b{font:700 14px/1 Georgia,serif}
+          .fc4-monthDate small{font:7px Arial,sans-serif;color:#a9a69b;text-transform:uppercase}
+          .fc4-monthDate[aria-current=date] b{color:#ffe2a8;text-shadow:0 0 6px #c47a27}
+          .fc4-monthDayEvents{flex:1;min-height:0;display:flex;flex-direction:column;gap:3px;padding-top:2px;overflow:hidden}
+          .fc4-overlay .fc4-monthPill,.fc4-standalone .fc4-monthPill{flex:0 0 17px;display:block;width:100%;min-height:17px;height:17px;padding:1px 3px;border-radius:4px;border-left-width:2px;font-size:8px;line-height:13px;font-weight:700;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+          .fc4-monthPill span{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+          .fc4-monthLongLayer{position:absolute;left:0;right:0;top:23px;height:17px;pointer-events:none}
+          .fc4-overlay .fc4-monthLong,.fc4-standalone .fc4-monthLong{position:absolute;top:0;pointer-events:auto;padding-left:5px}
+          .fc4-monthLong.continues-before{border-top-left-radius:0;border-bottom-left-radius:0}
+          .fc4-monthLong.continues-after{border-top-right-radius:0;border-bottom-right-radius:0}
+          .fc4-monthMore{flex:0 0 11px;min-height:11px;padding:0 1px;margin-top:auto;border:0;background:transparent;color:#e8c38d;text-align:left;font-size:7px;line-height:11px;white-space:nowrap}
+          .fc4-monthHint{height:16px;flex:0 0 16px;padding-top:6px;font-size:7px;letter-spacing:.15px;text-align:center;color:#adb8be}
+          .fc4-monthDate:focus,.fc4-monthMore:focus,.fc4-monthPill:focus{outline:1px solid #ffd28a;outline-offset:-1px}
+          .rows-6 .fc4-monthDayEvents{gap:2px}
+          .fc4-overlay .rows-6 .fc4-monthDayEvents .fc4-monthPill{min-height:15px;height:15px;flex-basis:15px;line-height:11px}
+          .fc4-standalone .fc4-monthBoard{height:560px}
+          .fc4-standalone .fc4-monthWeekdays{font-size:10px;flex-basis:27px}
+          .fc4-standalone .fc4-monthDate{height:24px;min-height:24px}
+          .fc4-standalone .fc4-monthDate b{font-size:19px}
+          .fc4-standalone .fc4-monthLongLayer{top:29px}
+          .fc4-standalone .fc4-monthHint{font-size:9px;height:22px;flex-basis:22px}
+          .fc4-standalone .fc4-monthMore{font-size:9px}
+          @media(max-width:480px){.fc4-standalone .fc4-monthBoard{height:500px}.fc4-standalone .fc4-monthWeekdays{font-size:8px;letter-spacing:.5px}.fc4-standalone .fc4-monthCells{gap:3px}.fc4-standalone .fc4-monthCell{padding:2px;border-radius:5px}.fc4-standalone .fc4-monthDate{height:21px;min-height:21px}.fc4-standalone .fc4-monthDate b{font-size:16px}.fc4-standalone .fc4-monthLongLayer{top:25px}.fc4-standalone .fc4-monthMore{font-size:7px}.fc4-standalone .fc4-monthHint{font-size:8px}.fc4-standalone .fc4-monthDate small{font-size:6px}}
+          '''
+          p=Path('family-calendar-foundry4.css');p.write_text(p.read_text()+css)
+          for name in ['index.html','calendar.html']:
+              p=Path(name);original=p.read_text();h=original
+              h,n=re.subn(r'(family-calendar-foundry4\.(?:js|css)\?v=)[^"\']+',r'\g<1>foundry4-month1',h)
+              assert n==2, 'Expected exactly JS and CSS cache versions in '+name
+              assert re.sub(r'foundry4-month1|foundry4-shifts1','VERSION',h)==re.sub(r'foundry4-month1|foundry4-shifts1','VERSION',original)
+              p.write_text(h)
+          for name in ['fridge.css','assets/family-hub-artwork.png','assets/calendar-foundry-art-v4.jpg','dinner-vote.js','dinner-vote.css']:
+              assert Path(name).read_bytes()==(baseline/name).read_bytes(), 'Protected file changed '+name
+          print('Month renderer installed. All artwork and dinner/chore files unchanged.')
+          PY
+          node --check family-calendar-foundry4.js
+      - name: Install browser test tools
+        run: |
+          python -m pip install --quiet Pillow==11.3.0 playwright==1.55.0
+          python -m playwright install --with-deps chromium
+      - name: Test month layout, dates, shifts, popups and unchanged chore screen
+        run: |
+          python - <<'PY'
+          import os,json,subprocess,time
+          from pathlib import Path
+          from urllib.parse import urlparse,parse_qs
+          from PIL import Image,ImageChops
+          from playwright.sync_api import sync_playwright
+          out=Path(os.environ['RUNNER_TEMP'])/'month-review';out.mkdir(exist_ok=True)
+          base=Path(os.environ['RUNNER_TEMP'])/'month-baseline'
+          servers=[subprocess.Popen(['python','-m','http.server','8765','--bind','127.0.0.1'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL),subprocess.Popen(['python','-m','http.server','8766','--bind','127.0.0.1','--directory',str(base)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)]
+          time.sleep(1)
+          def day(title,date,owner='Mich'):
+              return dict(title=title,owner_label=owner,all_day=True,all_day_start=date)
+          sample=[day('AM','2026-09-07'),day('ND','2026-09-08'),day('PM','2026-09-09'),dict(title='Family visit',owner_label='Shaun',all_day=False,start_at='2026-09-06T16:00:00+10:00',end_at='2026-09-13T16:00:00+10:00'),dict(title='Dentist',owner_label='Mich',all_day=False,start_at='2026-09-08T16:00:00+10:00',end_at='2026-09-08T17:00:00+10:00',location='Example clinic'),dict(title='Month boundary trip',owner_label='Family',all_day=True,all_day_start='2026-09-30',all_day_end='2026-10-03')]
+          sample += [day('Busy day '+str(i),'2026-09-15','Family') for i in range(6)]
+          sample += [day('AM','2026-09-16','Shaun'),day('<img src=x onerror=alert(1)>','2026-09-17','Family')]
+          errors=[];requests=[]
+          def route(r):
+              url=r.request.url
+              if url.startswith('http://127.0.0.1:'):r.continue_();return
+              if '/functions/v1/family-calendar' in url:
+                  requests.append(parse_qs(urlparse(url).query))
+                  if r.request.headers.get('x-family-pin')!='012345':r.fulfill(status=401,json={'error':'Incorrect PIN'});return
+                  r.fulfill(status=200,json={'events':sample,'synced_at':'2026-09-11T11:00:00Z'});return
+              r.fulfill(status=200,json=[])
+          frozen="var D=Date;window.Date=class extends D{constructor(...a){super(...(a.length?a:['2026-09-11T11:00:00Z']))}static now(){return new D('2026-09-11T11:00:00Z').getTime()}};"
+          report={}
+          with sync_playwright() as p:
+              browser=p.chromium.launch()
+              ctx=browser.new_context(viewport={'width':536,'height':848},timezone_id='Australia/Brisbane',device_scale_factor=2)
+              ctx.route('**/*',route);ctx.add_init_script(frozen+"localStorage.setItem('family-calendar-pin','012345');")
+              page=ctx.new_page();page.on('pageerror',lambda e:errors.append(str(e)))
+              page.goto('http://127.0.0.1:8766/index.html');page.wait_for_timeout(400);page.evaluate('document.fonts.ready');page.screenshot(path=str(out/'chore-before.png'))
+              page.goto('http://127.0.0.1:8765/index.html');page.wait_for_timeout(400);page.evaluate('document.fonts.ready');page.screenshot(path=str(out/'chore-after.png'))
+              diff=ImageChops.difference(Image.open(out/'chore-before.png').convert('RGB'),Image.open(out/'chore-after.png').convert('RGB'))
+              assert diff.getbbox() is None,'Main chore visual regression'
+              report['chore_screenshots_identical']=True
+              page.locator('#familyCalendarLaunch').click();page.wait_for_selector('.fc4-monthCell')
+              assert page.locator('#fc4Range').inner_text()=='September 2026'
+              assert page.locator('.fc4-monthCell').count()==35
+              assert requests[-1]=={'from':['2026-08-31'],'to':['2026-10-05']},requests[-1]
+              assert page.locator('.fc4-monthCell.is-today').get_attribute('data-date')=='2026-09-11'
+              assert page.locator('.fc4-monthWeekdays span').count()==7
+              assert page.locator('.fc4-monthLong',has_text='Family visit').count()==2
+              assert page.locator('.fc4-monthLong').first.bounding_box()['height']<22
+              assert page.evaluate('document.documentElement.scrollWidth')==536
+              assert page.locator('.fc4-content').evaluate('(e)=>e.scrollHeight<=e.clientHeight+1')
+              assert page.locator('.fc4-monthBoard img').count()==0
+              for label,colour,cls in [('AM','rgb(77, 232, 151)','day'),('PM','rgb(88, 166, 255)','pm'),('ND','rgb(193, 138, 255)','nd')]:
+                  card=page.locator('.fc4-monthPill.mich.fc4-shift-'+cls).first
+                  assert card.evaluate('(e)=>getComputedStyle(e).borderLeftColor')==colour
+              shaun=page.locator('.fc4-monthCell[data-date="2026-09-16"] .fc4-monthPill')
+              assert 'fc4-shift' not in shaun.get_attribute('class')
+              page.screenshot(path=str(out/'month-fridge.png'))
+              page.locator('[data-month-day="2026-09-08"]').first.click()
+              assert page.locator('.fc4-dialogList .fc4-event').count()==3
+              page.locator('.fc4-dialogList .fc4-event',has_text='Dentist').click()
+              assert 'Example clinic' in page.locator('#fc4Detail').inner_text()
+              page.locator('.fc4-dialogClose').click()
+              page.locator('.fc4-monthCell[data-date="2026-09-15"] .fc4-monthMore').click()
+              assert page.locator('.fc4-dialogList .fc4-event').count()==6
+              page.locator('.fc4-dialogClose').click()
+              page.locator('#fc4Next').click();page.wait_for_function("document.getElementById('fc4Range').textContent==='October 2026' && document.querySelectorAll('.fc4-monthCell').length===35")
+              assert requests[-1]=={'from':['2026-09-28'],'to':['2026-11-02']}
+              page.locator('#fc4Prev').click();page.wait_for_timeout(120)
+              page.locator('#fc4Prev').click();page.wait_for_timeout(120)
+              assert page.locator('#fc4Range').inner_text()=='August 2026'
+              assert page.locator('.fc4-monthCell').count()==42
+              assert page.locator('.fc4-content').evaluate('(e)=>e.scrollHeight<=e.clientHeight+1')
+              page.screenshot(path=str(out/'month-six-weeks.png'))
+              page.locator('#fc4Today').click();page.wait_for_timeout(120)
+              for i in range(5):page.locator('#fc4Next').click();page.wait_for_timeout(70)
+              assert page.locator('#fc4Range').inner_text()=='February 2027'
+              assert page.locator('.fc4-monthCell').count()==28
+              for i in range(12):page.locator('#fc4Next').click();page.wait_for_timeout(70)
+              assert page.locator('#fc4Range').inner_text()=='February 2028'
+              assert page.locator('.fc4-monthCell[data-date="2028-02-29"]').count()==1
+              page.locator('#fc4Today').click();page.wait_for_timeout(100)
+              assert page.locator('#fc4Range').inner_text()=='September 2026'
+              page.locator('#fc4Close').click();assert not page.locator('#fc4Overlay').is_visible()
+              report['month_navigation_leap_year_full_grid_range_and_popups']=True
+              mobile=browser.new_context(viewport={'width':390,'height':844},timezone_id='Australia/Brisbane')
+              mobile.route('**/*',route);mobile.add_init_script(frozen)
+              phone=mobile.new_page();phone.on('pageerror',lambda e:errors.append(str(e)))
+              phone.goto('http://127.0.0.1:8765/calendar.html')
+              phone.locator('#fc4Pin').fill('111111');phone.locator('.fc4-unlock').click()
+              phone.wait_for_function("document.getElementById('fc4PinError').textContent.indexOf('not accepted')>=0")
+              phone.locator('#fc4Pin').fill('012345');phone.locator('.fc4-unlock').click();phone.wait_for_selector('.fc4-monthCell')
+              assert phone.locator('.fc4-monthCell').count()==35
+              assert phone.evaluate('document.documentElement.scrollWidth')<=390
+              phone.screenshot(path=str(out/'month-phone.png'),full_page=True)
+              phone.locator('[data-month-day="2026-09-15"]').first.click();assert phone.locator('.fc4-dialogList .fc4-event').count()==6
+              phone.locator('.fc4-dialogClose').click();phone.locator('#fc4Close').click();phone.wait_for_selector('#fc4Pin')
+              assert phone.locator('.fc4-monthCell').count()==0
+              report['phone_month_pin_and_full_day_details']=True
+              report['shift_colours_preserved']=True
+              assert not errors,errors
+              report['browser_errors']=errors;report['passed']=True
+              browser.close()
+          for s in servers:s.terminate()
+          (out/'report.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: calendar-month-review
+          path: ${{ runner.temp }}/month-review/
+      - name: Commit only tested calendar site files
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add family-calendar-foundry4.js family-calendar-foundry4.css index.html calendar.html
+          git diff --cached --stat
+          git commit -m 'Show Family Calendar as a full month with spanning events and preserved shift colours'
+          git push origin HEAD:calendar-month-view
