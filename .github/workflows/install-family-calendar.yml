@@ -8,6 +8,8 @@ on:
       - 'family-calendar.js'
       - 'family-calendar.css'
       - 'family-calendar-industrial.css'
+      - 'family-calendar-industrial-v2.css'
+      - 'assets/family-calendar-industrial-bg.svg'
       - 'calendar.html'
 
 permissions:
@@ -27,9 +29,10 @@ jobs:
           import re
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          css = '<link rel="stylesheet" href="family-calendar.css?v=20260911-cal1">'
+          css = '<link rel="stylesheet" href="family-calendar.css?v=20260911-cal2">'
           industrial = '<link rel="stylesheet" href="family-calendar-industrial.css?v=20260911-steam1">'
-          js = '<script src="family-calendar.js?v=20260911-cal1"></script>'
+          industrial2 = '<link rel="stylesheet" href="family-calendar-industrial-v2.css?v=20260911-steam2">'
+          js = '<script src="family-calendar.js?v=20260911-cal2"></script>'
           if 'family-calendar.css' not in s:
               s = s.replace('</head>', css + '\n</head>')
           else:
@@ -38,6 +41,10 @@ jobs:
               s = s.replace(css, css + '\n' + industrial)
           else:
               s = re.sub(r'<link rel="stylesheet" href="family-calendar-industrial\.css\?v=[^"]+">', industrial, s)
+          if 'family-calendar-industrial-v2.css' not in s:
+              s = s.replace(industrial, industrial + '\n' + industrial2)
+          else:
+              s = re.sub(r'<link rel="stylesheet" href="family-calendar-industrial-v2\.css\?v=[^"]+">', industrial2, s)
           if 'family-calendar.js' not in s:
               s = s.replace('</body>', js + '\n</body>')
           else:
@@ -53,5 +60,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Apply industrial Family Calendar skin on fridge"
+          git commit -m "Apply Family Calendar industrial v2"
           git push
