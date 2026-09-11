@@ -70,3 +70,38 @@
 .fc4-event.mich.fc4-shift-day{border-color:#3e805c;border-left-color:#4de897;background:linear-gradient(115deg,#205a3c,#102e24);box-shadow:inset 0 1px 0 rgba(153,255,199,.12),0 2px 5px rgba(0,0,0,.4)}
 .fc4-event.mich.fc4-shift-pm{border-color:#3766a0;border-left-color:#58a6ff;background:linear-gradient(115deg,#204b83,#132846);box-shadow:inset 0 1px 0 rgba(153,202,255,.12),0 2px 5px rgba(0,0,0,.4)}
 .fc4-event.mich.fc4-shift-nd{border-color:#765397;border-left-color:#c18aff;background:linear-gradient(115deg,#533073,#2b1b43);box-shadow:inset 0 1px 0 rgba(218,184,255,.12),0 2px 5px rgba(0,0,0,.4)}
+
+/* Full month view. Only calendar content changes; artwork and shift colours are retained. */
+.fc4-monthBoard{height:100%;min-height:0;display:flex;flex-direction:column}
+.fc4-monthWeekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));flex:0 0 23px;align-items:center;margin-bottom:4px;border-bottom:1px solid #655035;color:#d9ba8d;font-size:8px;letter-spacing:1px;text-transform:uppercase;text-align:center}
+.fc4-monthWeeks{flex:1;min-height:0;display:flex;flex-direction:column;gap:5px}
+.fc4-monthWeek{position:relative;flex:1 1 0;min-height:0}
+.fc4-monthCells{height:100%;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.fc4-monthCell{min-width:0;min-height:0;display:flex;flex-direction:column;padding:3px;border:1px solid #4c4940;border-radius:7px;background:linear-gradient(145deg,#20272c,#121b22);overflow:hidden}
+.fc4-monthCell.is-other{background:#10161c;border-color:#30383d}
+.fc4-monthCell.is-other .fc4-monthDate{color:#8a9499}
+.fc4-monthCell.is-today{border-color:#e2a354;background:linear-gradient(145deg,#493924,#1c2226);box-shadow:inset 0 0 0 1px rgba(239,191,119,.22),0 0 8px rgba(217,152,40,.13)}
+.fc4-monthDate{border:0;background:transparent;color:#f4dbb3;display:flex;align-items:center;justify-content:space-between;width:100%;height:18px;min-height:18px;padding:0 2px;text-align:left}
+.fc4-monthDate b{font:700 14px/1 Georgia,serif}
+.fc4-monthDate small{font:7px Arial,sans-serif;color:#a9a69b;text-transform:uppercase}
+.fc4-monthDate[aria-current=date] b{color:#ffe2a8;text-shadow:0 0 6px #c47a27}
+.fc4-monthDayEvents{flex:1;min-height:0;display:flex;flex-direction:column;gap:3px;padding-top:2px;overflow:hidden}
+.fc4-overlay .fc4-monthPill,.fc4-standalone .fc4-monthPill{flex:0 0 17px;display:block;width:100%;min-height:17px;height:17px;padding:1px 3px;border-radius:4px;border-left-width:2px;font-size:8px;line-height:13px;font-weight:700;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+.fc4-monthPill span{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.fc4-monthLongLayer{position:absolute;left:0;right:0;top:23px;height:17px;pointer-events:none}
+.fc4-overlay .fc4-monthLong,.fc4-standalone .fc4-monthLong{position:absolute;top:0;pointer-events:auto;padding-left:5px}
+.fc4-monthLong.continues-before{border-top-left-radius:0;border-bottom-left-radius:0}
+.fc4-monthLong.continues-after{border-top-right-radius:0;border-bottom-right-radius:0}
+.fc4-monthMore{flex:0 0 11px;min-height:11px;padding:0 1px;margin-top:auto;border:0;background:transparent;color:#e8c38d;text-align:left;font-size:7px;line-height:11px;white-space:nowrap}
+.fc4-monthHint{height:16px;flex:0 0 16px;padding-top:6px;font-size:7px;letter-spacing:.15px;text-align:center;color:#adb8be}
+.fc4-monthDate:focus,.fc4-monthMore:focus,.fc4-monthPill:focus{outline:1px solid #ffd28a;outline-offset:-1px}
+.rows-6 .fc4-monthDayEvents{gap:2px}
+.fc4-overlay .rows-6 .fc4-monthDayEvents .fc4-monthPill{min-height:15px;height:15px;flex-basis:15px;line-height:11px}
+.fc4-standalone .fc4-monthBoard{height:560px}
+.fc4-standalone .fc4-monthWeekdays{font-size:10px;flex-basis:27px}
+.fc4-standalone .fc4-monthDate{height:24px;min-height:24px}
+.fc4-standalone .fc4-monthDate b{font-size:19px}
+.fc4-standalone .fc4-monthLongLayer{top:29px}
+.fc4-standalone .fc4-monthHint{font-size:9px;height:22px;flex-basis:22px}
+.fc4-standalone .fc4-monthMore{font-size:9px}
+@media(max-width:480px){.fc4-standalone .fc4-monthBoard{height:500px}.fc4-standalone .fc4-monthWeekdays{font-size:8px;letter-spacing:.5px}.fc4-standalone .fc4-monthCells{gap:3px}.fc4-standalone .fc4-monthCell{padding:2px;border-radius:5px}.fc4-standalone .fc4-monthDate{height:21px;min-height:21px}.fc4-standalone .fc4-monthDate b{font-size:16px}.fc4-standalone .fc4-monthLongLayer{top:25px}.fc4-standalone .fc4-monthMore{font-size:7px}.fc4-standalone .fc4-monthHint{font-size:8px}.fc4-standalone .fc4-monthDate small{font-size:6px}}
