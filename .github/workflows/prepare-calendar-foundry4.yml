@@ -1,0 +1,215 @@
+name: Prepare Calendar Foundry 4
+
+on:
+  push:
+    branches: [calendar-foundry4-release]
+    paths: ['.github/workflows/prepare-calendar-foundry4.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install validation tools
+        run: python -m pip install --quiet Pillow==11.3.0 playwright==1.55.0
+      - name: Recover prepared release and wire calendar only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import os, urllib.request, json, base64, hashlib, io, re, shutil
+          from PIL import Image
+          repo = os.environ['GITHUB_REPOSITORY']
+          baseline = Path(os.environ['RUNNER_TEMP']) / 'fc4-baseline'
+          shutil.copytree('.', baseline, ignore=shutil.ignore_patterns('.git'), dirs_exist_ok=True)
+          evidence = Path(os.environ['RUNNER_TEMP']) / 'fc4-evidence'
+          evidence.mkdir(exist_ok=True)
+          def blob(sha):
+              req = urllib.request.Request('https://api.github.com/repos/' + repo + '/git/blobs/' + sha,
+                  headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept':'application/vnd.github+json'})
+              with urllib.request.urlopen(req, timeout=30) as res:
+                  data = base64.b64decode(json.load(res)['content'])
+              actual = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+              assert actual == sha, 'Blob integrity mismatch'
+              print('Verified blob', sha, len(data), 'bytes', data[:8].hex())
+              return data
+          image_shas = [
+              'fad87ea6a70a296a3f90b8176fea68f92636e484',
+              '171866013861020db5cace7cff8a96ae810f4c88',
+              'e93f5e41df71a293f9eba2abaa9aa27df97ec8d3',
+              '6f424f347b6cbc77d8055a6d64eea4ec273797ac',
+              'd9c939974f0022b519aa63e0f68fd2bcf33137a4',
+              '05f885ff99fb15e6332d932bbfd5056afb91ce81',
+              '76c08ebe0e9d4af481c81f6adb58cfb94c1d1a62',
+              '4c356b64700ac18a43e983d747e835066635667f']
+          parts = [blob(s) for s in image_shas]
+          candidates = [(image_shas[i], p) for i,p in enumerate(parts)]
+          for i in range(len(parts)):
+              candidates.append(('assembled from part ' + str(i), b''.join(parts[i:])))
+          candidates.append(('assembled with repeated second part', parts[0] + parts[1] + b''.join(parts[1:])))
+          valid = []
+          for name, data in candidates:
+              try:
+                  im = Image.open(io.BytesIO(data)); im.load()
+                  if im.width >= 500 and im.height >= 150:
+                      valid.append((len(data), name, data, im.size))
+                      print('Valid raster candidate:', name, im.size, len(data))
+              except Exception:
+                  pass
+          assert valid, 'Prepared artwork is not a complete decodable raster; do not publish'
+          valid.sort(reverse=True)
+          _, name, data, dims = valid[0]
+          Path('assets/calendar-foundry-art-v4.jpg').write_bytes(data)
+          (evidence/'calendar-foundry-art-v4.jpg').write_bytes(data)
+          print('Chosen artwork:', name, dims)
+          code = blob('d3af8e1b2de4bd8857f2d587534d4e581b0d5792')
+          css = blob('fe1cbaee9f736224399e81df34214a0c4c641014')
+          assert b'__familyCalendarFoundry4' in code and b'fc4-overlay' in css
+          assert b'calendar-foundry-art-v4.jpg' in css
+          Path('family-calendar-foundry4.js').write_bytes(code)
+          Path('family-calendar-foundry4.css').write_bytes(css)
+          old_index = Path('index.html').read_text()
+          for fname in ['index.html','calendar.html']:
+              p = Path(fname); original = p.read_text(); h = original
+              h = re.sub(r'<link[^>]*href=[\"\']family-calendar-industrial[^\"\']*[\"\'][^>]*>\s*', '', h)
+              new_css = '<link rel="stylesheet" href="family-calendar-foundry4.css?v=foundry4">'
+              if 'family-calendar-foundry4.css' not in h:
+                  h = h.replace('</head>', new_css + '\n</head>')
+              h,n = re.subn(r'<script\s+src=[\"\']family-calendar\.js[^\"\']*[\"\']\s*></script>',
+                  '<script src="family-calendar-foundry4.js?v=foundry4"></script>', h)
+              assert n == 1, 'Expected exactly one old calendar script in ' + fname
+              p.write_text(h)
+          def chore_markup(s):
+              return '\n'.join(x for x in s.splitlines() if 'family-calendar' not in x)
+          assert chore_markup(old_index) == chore_markup(Path('index.html').read_text()), 'Unexpected change outside calendar references'
+          for fname in ['fridge.css','assets/family-hub-artwork.png','dinner-vote.js','dinner-vote.css']:
+              assert Path(fname).read_bytes() == (baseline/fname).read_bytes(), 'Protected file changed: ' + fname
+          # The old installer must no longer rewrite production files back to old calendar versions.
+          Path('.github/workflows/install-family-calendar.yml').write_text('''name: Validate Family Calendar
+          on:
+            workflow_dispatch:
+            push:
+              branches: [main]
+              paths: ['family-calendar-foundry4.js', 'family-calendar-foundry4.css', 'calendar.html']
+          permissions:
+            contents: read
+          jobs:
+            validate:
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v4
+                - run: node --check family-calendar-foundry4.js
+                - run: test -s assets/calendar-foundry-art-v4.jpg
+          ''')
+          (evidence/'asset-report.json').write_text(json.dumps({'image_source':name,'image_dimensions':dims,'image_bytes':len(data),'protected_chore_files_unchanged':True},indent=2))
+          PY
+          node --check family-calendar-foundry4.js
+      - name: Install browser
+        run: python -m playwright install --with-deps chromium
+      - name: Browser checks with synthetic calendar data only
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import os, subprocess, json, time
+          from PIL import Image, ImageChops
+          from playwright.sync_api import sync_playwright
+          baseline = Path(os.environ['RUNNER_TEMP'])/'fc4-baseline'
+          evidence = Path(os.environ['RUNNER_TEMP'])/'fc4-evidence'
+          a = subprocess.Popen(['python','-m','http.server','8765','--bind','127.0.0.1'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+          b = subprocess.Popen(['python','-m','http.server','8766','--bind','127.0.0.1','--directory',str(baseline)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+          time.sleep(1)
+          sample = [
+              {'owner_label':'Shaun','title':'Family visiting','all_day':False,'start_at':'2026-09-06T16:00:00+10:00','end_at':'2026-09-13T16:00:00+10:00'},
+              {'owner_label':'Mich','title':'Night shift','all_day':True,'all_day_start':'2026-09-08','all_day_end':'2026-09-09'},
+              {'owner_label':'Mich','title':'Dentist appointment','all_day':False,'start_at':'2026-09-08T16:00:00+10:00','end_at':'2026-09-08T17:00:00+10:00'},
+              {'owner_label':'Mich','title':'Night shift','all_day':True,'all_day_start':'2026-09-09','all_day_end':'2026-09-10'},
+              {'owner_label':'Family','title':'School excursion','all_day':False,'start_at':'2026-09-11T08:30:00+10:00','end_at':'2026-09-11T11:15:00+10:00','location':'Example school'}]
+          errors=[]; requests=[]
+          def intercept(route):
+              url = route.request.url
+              if url.startswith('http://127.0.0.1:'):
+                  route.continue_(); return
+              if '/functions/v1/family-calendar' in url:
+                  requests.append(url)
+                  if route.request.headers.get('x-family-pin') != '012345':
+                      route.fulfill(status=401,json={'error':'Incorrect PIN'}); return
+                  data = sample if 'from=2026-09-07' in url else []
+                  route.fulfill(status=200,json={'events':data,'synced_at':'2026-09-11T11:00:00Z'}); return
+              route.fulfill(status=200,json=[])
+          frozen = "var D=Date;window.Date=class extends D{constructor(...a){super(...(a.length?a:['2026-09-11T11:00:00Z']))}static now(){return new D('2026-09-11T11:00:00Z').getTime()}};"
+          report={}
+          with sync_playwright() as p:
+              browser=p.chromium.launch()
+              context=browser.new_context(viewport={'width':536,'height':848},timezone_id='Australia/Brisbane',device_scale_factor=1)
+              context.route('**/*',intercept)
+              context.add_init_script(frozen+"localStorage.setItem('family-calendar-pin','012345');")
+              page=context.new_page();page.on('pageerror',lambda e:errors.append(str(e)))
+              page.goto('http://127.0.0.1:8766/index.html');page.wait_for_timeout(700);page.evaluate('document.fonts.ready')
+              page.screenshot(path=str(evidence/'chore-before.png'))
+              page.goto('http://127.0.0.1:8765/index.html');page.wait_for_timeout(700);page.evaluate('document.fonts.ready')
+              page.screenshot(path=str(evidence/'chore-after.png'))
+              diff=ImageChops.difference(Image.open(evidence/'chore-before.png').convert('RGB'),Image.open(evidence/'chore-after.png').convert('RGB'))
+              changed=sum(1 for px in diff.getdata() if max(px)>8)
+              report['main_chore_changed_pixel_ratio']=changed/(536*848)
+              assert changed/(536*848)<0.002, 'Main chore page visual regression'
+              page.locator('#familyCalendarLaunch').click()
+              page.wait_for_selector('.fc4-day')
+              assert page.locator('.fc4-day').count()==7
+              assert page.locator('.fc4-longList .fc4-long').count()==1
+              assert page.locator('.fc4-version').inner_text()=='FOUNDRY 4'
+              image_ok=page.evaluate("""async()=>{let i=new Image();i.src='assets/calendar-foundry-art-v4.jpg';await i.decode();return i.naturalWidth>=500} """)
+              assert image_ok
+              assert page.locator('.fc4-long').bounding_box()['height'] < 100
+              assert page.evaluate('document.documentElement.scrollWidth') <= 536
+              page.screenshot(path=str(evidence/'fridge-foundry4.png'))
+              page.locator('.fc4-event',has_text='School excursion').click();page.wait_for_selector('.fc4-detail:visible')
+              assert 'Example school' in page.locator('.fc4-detail').inner_text()
+              page.locator('.fc4-dialogClose').click()
+              page.locator('#fc4Next').click();page.wait_for_timeout(200)
+              assert '14 Sep' in page.locator('#fc4Range').inner_text()
+              page.locator('#fc4Today').click();page.wait_for_timeout(200)
+              assert '7 Sep' in page.locator('#fc4Range').inner_text()
+              page.locator('#fc4Close').click();assert not page.locator('#fc4Overlay').is_visible()
+              report['fridge_navigation_details_and_close']=True
+              mobile=browser.new_context(viewport={'width':390,'height':844},timezone_id='Australia/Brisbane',device_scale_factor=1)
+              mobile.route('**/*',intercept);mobile.add_init_script(frozen)
+              phone=mobile.new_page();phone.on('pageerror',lambda e:errors.append(str(e)))
+              phone.goto('http://127.0.0.1:8765/calendar.html');phone.locator('#fc4Pin').fill('111111');phone.locator('.fc4-unlock').click()
+              phone.wait_for_function("document.getElementById('fc4PinError') && document.getElementById('fc4PinError').textContent.indexOf('not accepted')>=0")
+              phone.locator('#fc4Pin').fill('012345');phone.locator('.fc4-unlock').click();phone.wait_for_selector('.fc4-day')
+              assert phone.locator('.fc4-day').count()==7
+              assert phone.evaluate('document.documentElement.scrollWidth') <= 390
+              phone.screenshot(path=str(evidence/'phone-foundry4.png'),full_page=True)
+              phone.locator('#fc4Close').click();phone.wait_for_selector('#fc4Pin')
+              assert phone.locator('.fc4-event').count()==0
+              report['mobile_layout_and_pin_lock']=True
+              browser.close()
+          a.terminate();b.terminate()
+          report['browser_errors']=errors
+          assert not errors, str(errors)
+          report['passed']=True
+          (evidence/'browser-report.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps(report,indent=2))
+          PY
+      - name: Upload review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: calendar-foundry4-review
+          path: ${{ runner.temp }}/fc4-evidence/
+      - name: Commit tested release to staging branch only
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/calendar-foundry-art-v4.jpg family-calendar-foundry4.js family-calendar-foundry4.css index.html calendar.html .github/workflows/install-family-calendar.yml
+          git diff --cached --stat
+          git commit -m 'Publish tested Foundry 4 calendar with raster artwork and unchanged mountain chore board'
+          git push origin HEAD:calendar-foundry4-release
